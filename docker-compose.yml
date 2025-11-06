@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: kajishare_development
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -b 0.0.0.0"
+    environment:
+      RAILS_ENV: development
+      SECRET_KEY_BASE: 7dbdaf603b2836f1a43334cc00d50f7fa4a80b641d3ed7f0afd8eede0a86e7ea5774aa6d7d571aae5aae807b3edf72adce796b03d64fbf5b7f474334b7639bd2
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+volumes:
+  db-data:
