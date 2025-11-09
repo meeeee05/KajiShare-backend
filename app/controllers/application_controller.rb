@@ -11,12 +11,14 @@ class ApplicationController < ActionController::API
 
   private
 
-  #DB接続条項をJSON形式で確認
+#DB接続状況をJSON形式で確認
   def database_status
     begin
-      User.connection.active? ? "connected" : "disconnected"
+      #実際にクエリを実行して接続確認
+      User.connection.execute("SELECT 1")
+      "connected"
     rescue
-      "error"
+      "disconnected"    
     end
   end
 end
