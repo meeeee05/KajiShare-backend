@@ -1,11 +1,9 @@
-# Docker, PostgreSQL database configuration
 default: &default
   adapter: postgresql
   encoding: unicode
-  host: db
-  username: postgres
-  password: password
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: <%= ENV.fetch("DB_USERNAME", "me") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "") %>
+  host: localhost
 
 development:
   <<: *default
@@ -18,6 +16,5 @@ test:
 production:
   <<: *default
   database: kajishare_production
-  username: <%= ENV["POSTGRES_USER"] || "postgres" %>
-  password: <%= ENV["POSTGRES_PASSWORD"] || "password" %>
-  host: <%= ENV["POSTGRES_HOST"] || "db" %>
+  username: <%= ENV["DB_USERNAME"] %>
+  password: <%= ENV["DB_PASSWORD"] %>
