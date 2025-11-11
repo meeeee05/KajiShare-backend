@@ -1,6 +1,6 @@
 class Task < ApplicationRecord
   belongs_to :group
-  belongs_to :assigned_to, class_name: "User", optional: true
 
-  validates :title, presence: true
+  #model関連付け
+  has_many :assignments, dependent: :destroy
 end
