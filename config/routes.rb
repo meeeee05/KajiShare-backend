@@ -10,6 +10,13 @@ Rails.application.routes.draw do
     namespace :v1 do
       # Authentication
       post "auth/google", to: "sessions#google_auth"
+
+      resources :users
+      resources :groups
+      resources :memberships
+      resources :tasks
+      resources :assignments
+      resources :evaluations
       
       # Resources
       resources :users, only: [:index, :show, :update]
