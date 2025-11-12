@@ -1,32 +1,88 @@
 puts "Seeding data..."
 
-User.destroy_all
-Group.destroy_all
-Membership.destroy_all
-Task.destroy_all
-Assignment.destroy_all
-Evaluation.destroy_all
+#Users
+user1 = User.create!(
+  google_sub: "1234567890abcde",
+  name: "Taro Yamada",
+  email: "taroo@example.com",
+  picture: "https://example.com/avatar.png",
+  account_type: "general"
+)
 
-#user
-u1 = User.create!(google_sub: "sub_001", name: "Alice", email: "alice@example.com", picture: "https://example.com/alice.png", account_type: "standard")
-u2 = User.create!(google_sub: "sub_002", name: "Bob", email: "bob@example.com", picture: "https://example.com/bob.png", account_type: "standard")
+user2 = User.create!(
+  google_sub: "abcdef1234567890",
+  name: "Hanako Suzuki",
+  email: "hanako@example.com",
+  picture: "https://example.com/avatar2.png",
+  account_type: "general"
+)
 
-#group
-g1 = Group.create!(name: "家族A", share_key: "share123", assign_mode: "manual", balance_type: "equal")
+#Group
+group = Group.create!(
+  name: "家事シェア",
+  share_key: "abcd1234",
+  assign_mode: "manual",
+  balance_type: "equal"
+)
 
-#membership
-Membership.create!(user: u1, group: g1, role: "admin")
-Membership.create!(user: u2, group: g1, role: "member")
+#Membership
+member1 = Membership.create!(
+  user: user1,
+  group: group,
+  role: "admin",
+  active: true
+)
 
-#task
-t1 = Task.create!(group: g1, name: "洗い物", description: "夕食後の皿洗い", frequency: "daily")
-t2 = Task.create!(group: g1, name: "掃除", description: "リビングの掃除", frequency: "weekly")
+member2 = Membership.create!(
+  user: user2,
+  group: group,
+  role: "member",
+  active: true
+)
 
-#assignment
-a1 = Assignment.create!(task: t1, user: u1, status: "done")
-a2 = Assignment.create!(task: t2, user: u2, status: "pending")
+# === Tasks ===
+task1 = Task.create!(
+  group: group,
+  name: "掃除",
+  description: "リビングの掃除をする"
+)
 
-#evaluation
-Evaluation.create!(assignment: a1, user: u2, score: 5, comment: "きれいに洗えてた！")
+task2 = Task.create!(
+  group: group,
+  name: "洗濯",
+  description: "服を洗濯して干す"
+)
 
-puts "seeding completed."
+task3 = Task.create!(
+  group: group,
+  name: "料理",
+  description: "夕食を作る"
+)
+
+#Assignment
+assignment1 = Assignment.create!(
+  task: task1,
+  membership: member1
+)
+
+assignment2 = Assignment.create!(
+  task: task2,
+  membership: member2
+)
+
+#Evaluation
+Evaluation.create!(
+  assignment: assignment1,
+  evaluator_id: member2.id,
+  score: 5,
+  feedback: "完璧！"
+)
+
+Evaluation.create!(
+  assignment: assignment2,
+  evaluator_id: member1.id,
+  score: 4,
+  feedback: "もう少し丁寧に干すと良いですね。"
+)
+
+puts "Seeding completed."

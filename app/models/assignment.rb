@@ -1,11 +1,11 @@
 class Assignment < ApplicationRecord
+
   #model関連付け
   belongs_to :task
-  belongs_to :user
+  belongs_to :membership
   has_many :evaluations, dependent: :destroy
 
-  validates :status, presence: true
+  #status
+  #enum status: { pending: "pending", in_progress: "in_progress", completed: "completed" }
 
-  #status管理
-  enum status: { pending: 'pending', done: 'done', skipped: 'skipped' }
 end

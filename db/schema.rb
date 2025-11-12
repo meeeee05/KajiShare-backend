@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_09_133930) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_12_012634) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_133930) do
     t.text "comment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "membership_id", null: false
+    t.index ["membership_id"], name: "index_assignments_on_membership_id"
     t.index ["task_id"], name: "index_assignments_on_task_id"
   end
 
@@ -53,6 +55,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_133930) do
     t.float "workload_ratio"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active"
     t.index ["group_id"], name: "index_memberships_on_group_id"
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
@@ -77,6 +80,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_133930) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "assignments", "memberships"
   add_foreign_key "assignments", "tasks"
   add_foreign_key "evaluations", "assignments"
   add_foreign_key "memberships", "groups"
