@@ -3,7 +3,7 @@ module Api
     class UsersController < ApplicationController
       before_action :set_user, only: [:show, :update, :destroy]
 
-      #User一覧取得
+      #全User一覧を返す
       def index
         users = User.all
         render json: users
