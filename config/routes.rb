@@ -18,7 +18,8 @@ Rails.application.routes.draw do
 
       # Standalone resources
       resources :tasks, only: [:index, :show]  # 全タスクの一覧・詳細用
-      resources :assignments, only: [:show, :index]
+      #resources :assignments, only: [:show, :index]
+      resources :assignments
       resources :evaluations, only: [:create, :update, :show, :index]
     end
   end
