@@ -40,7 +40,7 @@ member2 = Membership.create!(
   active: true
 )
 
-# === Tasks ===
+#Tasks
 task1 = Task.create!(
   group: group,
   name: "掃除",
