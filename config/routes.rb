@@ -10,18 +10,14 @@ Rails.application.routes.draw do
       resources :users, only: [:index, :show, :update]
 
       resources :groups do
-        resources :tasks, only: [:index, :create]
-        resources :tasks, only: [:show, :update, :destroy]
+        resources :tasks, only: [:index, :create, :show, :update, :destroy]
+        resources :memberships, only: [:index, :create, :destroy]
       end
 
-      #TaskがAssignmentをネスト
-      resources :tasks, only: [] do
-        resources :assignments, only: [:index, :create]
-      end
-
-      #非ネストルート
-      resources :assignments, only: [:show, :update, :destroy]
-
+      #独立したリソース
+      resources :tasks, only: [:index, :show]
+      resources :assignments, only: [:index, :show, :update, :destroy]
+      resources :memberships, only: [:index, :show, :update]
       resources :evaluations, only: [:create, :update, :show, :index]
     end
   end
