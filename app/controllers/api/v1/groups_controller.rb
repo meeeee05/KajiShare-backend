@@ -50,15 +50,17 @@ class Api::V1::GroupsController < ApplicationController
     params.require(:group).permit(:name, :share_key, :assign_mode, :balance_type, :active)
   end
 
-  # 権限チェック：Admin のみがグループの更新・削除を実行可能
+  #権限チェック：Adminのみがグループの更新・削除を実行可能
   def check_admin_permission
     membership = Membership.find_by(user_id: current_user.id, group_id: @group.id)
 
+    #メンバー存在チェック
     if membership.nil?
       render json: { error: "You are not a member of this group" }, status: :forbidden
       return
     end
 
+    #admin権限チェック
     if membership.role != "admin"
       render json: { error: "You are not allowed to perform this action. Admin permission required." }, status: :forbidden
     end
