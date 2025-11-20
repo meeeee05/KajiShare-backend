@@ -29,15 +29,15 @@ class ApplicationController < ActionController::API
     
     token = auth_header.split("Bearer ").last
     
-    #テスト用トークンチェック
+    #test用トークンチェック
     if Rails.env.development? && token.start_with?("test_")
       case token
       when "test_admin_taro"
-        @current_user = User.find_by(google_sub: "1234567890abcde")  # Taro (Admin)
+        @current_user = User.find_by(google_sub: "1234567890abcde")  #Admin
       when "test_member_hanako"
-        @current_user = User.find_by(google_sub: "abcdef1234567890")  # Hanako (Member)
-      when "test_nonmember"
-        @current_user = User.new(id: 999, google_sub: "nonmember123")  # 非メンバー
+        @current_user = User.find_by(google_sub: "abcdef1234567890")  #Member
+      when "test_nomember"
+        @current_user = User.new(id: 999, google_sub: "nomember123")  #非メンバー
       else
         return render json: { error: "Invalid test token" }, status: :unauthorized
       end
@@ -49,7 +49,7 @@ class ApplicationController < ActionController::API
       return
     end
     
-    #Google ID Token検証
+    #GoogleIDToken検証
     begin
       require "google-id-token"
       validator = GoogleIDToken::Validator.new

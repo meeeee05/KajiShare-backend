@@ -34,10 +34,26 @@ class Api::V1::GroupsController < ApplicationController
     end
   end
 
-  #DELETE /api/v1/groups/:id
+  #DELETE /api/v1/groups/:id - Admin権限が必要
   def destroy
-    @group.destroy
-    head :no_content
+    begin
+      # トランザクション内で安全に削除
+      ActiveRecord::Base.transaction do
+        # 関連データの削除ログ
+        Rails.logger.info "Deleting group '#{@group.name}' (ID: #{@group.id}) by admin user #{current_user.name}"
+        
+        # グループを削除（dependent: :destroyにより関連データも自動削除）
+        @group.destroy!
+        
+        render json: { 
+          message: "Group '#{@group.name}' has been successfully deleted",
+          deleted_at: Time.current 
+        }, status: :ok
+      end
+    rescue => e
+      Rails.logger.error "Failed to delete group: #{e.message}"
+      render json: { error: "Failed to delete group: #{e.message}" }, status: :unprocessable_entity
+    end
   end
 
   private

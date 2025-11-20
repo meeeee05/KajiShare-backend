@@ -1,44 +1,52 @@
 puts "Seeding data..."
 
-#Users
-user1 = User.create!(
-  google_sub: "1234567890abcde",
-  name: "Taro Yamada",
-  email: "taroo@example.com",
-  picture: "https://example.com/avatar.png",
-  account_type: "general"
-)
+# 既存データをクリア（必要に応じて）
+puts "Clearing existing data..."
+Evaluation.destroy_all
+Assignment.destroy_all
+Task.destroy_all
+Membership.destroy_all
+Group.destroy_all
+User.destroy_all
 
-user2 = User.create!(
-  google_sub: "abcdef1234567890",
-  name: "Hanako Suzuki",
-  email: "hanako@example.com",
-  picture: "https://example.com/avatar2.png",
-  account_type: "general"
-)
+#Users
+user1 = User.find_or_create_by!(google_sub: "1234567890abcde") do |u|
+  u.name = "Taro Yamada"
+  u.email = "taroo@example.com"
+  u.picture = "https://example.com/avatar.png"
+  u.account_type = "general"
+end
+
+user2 = User.find_or_create_by!(google_sub: "abcdef1234567890") do |u|
+  u.name = "Hanako Suzuki"
+  u.email = "hanako@example.com"
+  u.picture = "https://example.com/avatar2.png"
+  u.account_type = "general"
+end
 
 #Group
-group = Group.create!(
-  name: "家事シェア",
-  share_key: "abcd1234",
-  assign_mode: "manual",
-  balance_type: "equal"
-)
+group = Group.find_or_create_by!(name: "家事シェア") do |g|
+  g.share_key = "abcd1234"
+  g.assign_mode = "manual"
+  g.balance_type = "equal"
+end
 
 #Membership
-member1 = Membership.create!(
+member1 = Membership.find_or_create_by!(
   user: user1,
-  group: group,
-  role: "admin",
-  active: true
-)
+  group: group
+) do |m|
+  m.role = "admin"
+  m.active = true
+end
 
-member2 = Membership.create!(
+member2 = Membership.find_or_create_by!(
   user: user2,
-  group: group,
-  role: "member",
-  active: true
-)
+  group: group
+) do |m|
+  m.role = "member"
+  m.active = true
+end
 
 #Tasks
 task1 = Task.create!(
