@@ -9,7 +9,7 @@ class ApplicationController < ActionController::API
     }
   end
 
-#DB接続状況をJSON形式で確認
+  #DB接続状況をJSON形式で確認
   def database_status
     begin
       #実際にクエリを実行して接続確認
@@ -20,6 +20,7 @@ class ApplicationController < ActionController::API
     end
   end
 
+  #ユーザー認証
   def authenticate_user!
     auth_header = request.headers["Authorization"]
     

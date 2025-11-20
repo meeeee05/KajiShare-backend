@@ -9,7 +9,7 @@ Membership.destroy_all
 Group.destroy_all
 User.destroy_all
 
-#Users 
+#Users（既存データに依存しない）
 user1 = User.find_or_create_by!(google_sub: "1234567890abcde") do |u|
   u.name = "Taro Yamada"
   u.email = "taroo@example.com"

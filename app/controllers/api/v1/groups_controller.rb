@@ -1,5 +1,6 @@
 class Api::V1::GroupsController < ApplicationController
   before_action :set_group, only: [:show, :update, :destroy]
+  #権限チェック
   before_action :authenticate_user!, only: [:update, :destroy]
   before_action :check_admin_permission, only: [:update, :destroy]
 
