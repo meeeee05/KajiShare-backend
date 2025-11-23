@@ -32,6 +32,19 @@ module Api
       end
 
       def destroy
+        #最後のAdminは削除できない　→ しようとした場合の保護
+        if @membership.role == "admin"
+          admin_count = Membership.where(group_id: @membership.group_id, role: "admin").count
+          if admin_count <= 1
+            return render json: { 
+              error: "Cannot delete the last admin of the group. Please assign admin role to another member first." 
+            }, status: :forbidden
+          end
+        end
+
+        # 削除ログ記録
+        Rails.logger.info "Deleting membership: User #{@membership.user.name} from Group #{@membership.group.name} by admin #{current_user.name}"
+        
         @membership.destroy
         head :no_content
       end
