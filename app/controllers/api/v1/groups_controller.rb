@@ -26,7 +26,7 @@ class Api::V1::GroupsController < ApplicationController
     end
   end
 
-  #PATCH/PUT /api/v1/groups/:id
+  #PATCH/PUT /api/v1/groups/:id - Admin権限が必要（グループ情報編集）
   def update
     if @group.update(group_params)
       render json: @group
@@ -67,7 +67,8 @@ class Api::V1::GroupsController < ApplicationController
     params.require(:group).permit(:name, :share_key, :assign_mode, :balance_type, :active)
   end
 
-  #権限チェック：Adminのみがグループの更新・削除を実行可能
+  #権限チェック：Adminのみがメンバー（グループ？）の更新・削除を実行可能
+  #Admin権限を持つユーザーのみに操作を許可
   def check_admin_permission
     membership = Membership.find_by(user_id: current_user.id, group_id: @group.id)
 

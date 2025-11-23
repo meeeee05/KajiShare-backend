@@ -24,10 +24,12 @@ class ApplicationController < ActionController::API
   def authenticate_user!
     auth_header = request.headers["Authorization"]
     
+    #Bearer <token>形式チェック
     unless auth_header&.start_with?("Bearer ")
       return render json: { error: "Unauthorized - No token provided" }, status: :unauthorized
     end
     
+    #Bearer部分を排除→トークンのみ抽出
     token = auth_header.split("Bearer ").last
     
     #test用トークンチェック
