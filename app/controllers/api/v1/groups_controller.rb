@@ -1,7 +1,7 @@
 class Api::V1::GroupsController < ApplicationController
   before_action :set_group, only: [:show, :update, :destroy]
   #権限チェック
-  before_action :authenticate_user!, only: [:update, :destroy]
+  before_action :authenticate_user!, only: [:create, :update, :destroy]
   before_action :check_admin_permission, only: [:update, :destroy]
 
   #GET /api/v1/groups
@@ -19,11 +19,21 @@ class Api::V1::GroupsController < ApplicationController
   def create
     group = Group.new(group_params)
 
-    if group.save
-      render json: group, status: :created
-    else
-      render json: { errors: group.errors.full_messages }, status: :unprocessable_entity
+    ActiveRecord::Base.transaction do
+      if group.save
+        # グループ作成者を自動的にAdminメンバーとして追加
+        membership = group.memberships.create!(
+          user: current_user,
+          role: "admin",
+          active: true
+        )
+        render json: group, status: :created
+      else
+        render json: { errors: group.errors.full_messages }, status: :unprocessable_entity
+      end
     end
+  rescue => e
+    render json: { error: "Failed to create group: #{e.message}" }, status: :unprocessable_entity
   end
 
   #PATCH/PUT /api/v1/groups/:id - Admin権限が必要（グループ情報編集）

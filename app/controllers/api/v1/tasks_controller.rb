@@ -1,22 +1,16 @@
 module Api
   module V1
     class TasksController < ApplicationController
-      before_action :set_group, only: [:create]  # createのみgroup必須
+      before_action :set_group, only: [:index, :create]  # index、createでgroup必須
       before_action :set_task, only: [:show, :update, :destroy]
-      before_action :authenticate_user!, only: [:create, :update, :destroy]
-      before_action :check_member_permission, only: [:create, :update]  # 作成・更新はMember権限以上
+      before_action :authenticate_user!  # 全アクションで認証必須
+      before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
       before_action :check_admin_permission, only: [:destroy]  # 削除はAdmin権限のみ
 
-      # GET /api/v1/tasks - 全タスク一覧
+      # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能
       def index
-        if params[:group_id].present?
-          # グループ内のタスク一覧
-          @group = Group.find(params[:group_id])
-          tasks = @group.tasks
-        else
-          # 全タスク一覧
-          tasks = Task.all
-        end
+        # グループ内のタスク一覧（メンバーシップチェック済み）
+        tasks = @group.tasks
         render json: tasks
       end
 
@@ -82,8 +76,13 @@ module Api
 
       #Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
       def check_member_permission
-        #group_idの取得（新規作成時はパラメータから、更新時は既存レコードから）
-        group_id = action_name == 'create' ? @group.id : @task.group_id
+        #group_idの取得（アクションに応じて適切な方法で取得）
+        case action_name
+        when 'index', 'create'
+          group_id = @group.id
+        when 'show', 'update'
+          group_id = @task.group_id
+        end
         
         membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
 
