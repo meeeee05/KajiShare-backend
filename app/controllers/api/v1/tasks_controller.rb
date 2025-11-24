@@ -76,7 +76,7 @@ module Api
 
       #Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
       def check_member_permission
-        #group_idの取得（アクションに応じて適切な方法で取得）
+        #group_idの取得（アクションごとに取得）
         case action_name
         when 'index', 'create'
           group_id = @group.id

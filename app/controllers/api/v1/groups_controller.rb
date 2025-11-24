@@ -21,7 +21,7 @@ class Api::V1::GroupsController < ApplicationController
 
     ActiveRecord::Base.transaction do
       if group.save
-        #グループ作成者を自動的にAdminメンバーとして追加
+        #グループ作成者を自動的にAdminとして追加
         membership = group.memberships.create!(
           user: current_user,
           role: "admin",
