@@ -21,7 +21,7 @@ class Api::V1::GroupsController < ApplicationController
 
     ActiveRecord::Base.transaction do
       if group.save
-        # グループ作成者を自動的にAdminメンバーとして追加
+        #グループ作成者を自動的にAdminメンバーとして追加
         membership = group.memberships.create!(
           user: current_user,
           role: "admin",
@@ -48,12 +48,12 @@ class Api::V1::GroupsController < ApplicationController
   #DELETE /api/v1/groups/:id - Admin権限が必要
   def destroy
     begin
-      # トランザクション内で安全に削除
+      #トランザクション内で安全に削除
       ActiveRecord::Base.transaction do
-        # 関連データの削除ログ
+        #関連データの削除ログ
         Rails.logger.info "Deleting group '#{@group.name}' (ID: #{@group.id}) by admin user #{current_user.name}"
         
-        # グループを削除（dependent: :destroyにより関連データも自動削除）
+        #グループを削除（dependent: :destroyにより関連データも自動削除）
         @group.destroy!
         
         render json: { 

@@ -19,7 +19,7 @@ module Api
       def create
         assignment = @task.assignments.build(assignment_params)
         
-        # 現在のユーザーのmembership_idを自動設定
+        #現在のユーザーのmembership_idを自動設定
         membership = Membership.find_by(user_id: current_user.id, group_id: @task.group_id)
         assignment.membership_id = membership.id if membership
 
@@ -86,9 +86,9 @@ module Api
         )
       end
 
-      # Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
+      #Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
       def check_member_permission
-        # group_idの取得（アクションに応じて適切な方法で取得）
+        #group_idの取得（アクションに応じて適切な方法で取得）
         case action_name
         when 'index', 'create'
           group_id = @task.group_id
@@ -98,32 +98,32 @@ module Api
         
         membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
 
-        # メンバー存在チェック
+        #メンバー存在チェック
         if membership.nil?
           render json: { error: "You are not a member of this group" }, status: :forbidden
           return
         end
 
-        # アクティブメンバーチェック
+        #アクティブメンバーチェック
         unless membership.active?
           render json: { error: "Your membership is not active" }, status: :forbidden
         end
       end
 
-      # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
+      #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        # group_idの取得（削除時は既存レコードから）
+        #group_idの取得（削除時は既存レコードから）
         group_id = @assignment.task.group_id
         
         membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
 
-        # メンバー存在チェック
+        #メンバー存在チェック
         if membership.nil?
           render json: { error: "You are not a member of this group" }, status: :forbidden
           return
         end
 
-        # Admin権限チェック
+        #Admin権限チェック
         if membership.role != "admin"
           render json: { error: "You are not allowed to perform this action. Admin permission required." }, status: :forbidden
         end

@@ -9,7 +9,7 @@ module Api
 
       # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能
       def index
-        # グループ内のタスク一覧（メンバーシップチェック済み）
+        #グループ内のタスク一覧（メンバーシップチェック済み）
         tasks = @group.tasks
         render json: tasks
       end
@@ -41,12 +41,12 @@ module Api
       # DELETE /api/v1/tasks/:id - Admin権限が必要
       def destroy
         begin
-          # トランザクション内で安全に削除
+          #トランザクション内で安全に削除
           ActiveRecord::Base.transaction do
             # 削除ログ記録
             Rails.logger.info "Deleting task '#{@task.name}' (ID: #{@task.id}) from Group '#{@task.group.name}' by admin user #{current_user.name}"
             
-            # タスクを削除（dependent: :destroyにより関連データも自動削除）
+            #タスクを削除（dependent: :destroyにより関連データも自動削除）
             @task.destroy!
             
             render json: { 
@@ -98,20 +98,20 @@ module Api
         end
       end
 
-      # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
+      #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        # group_idの取得（削除時は既存レコードから）
+        #group_idの取得（削除時は既存レコードから）
         group_id = @task.group_id
         
         membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
 
-        # メンバー存在チェック
+        #メンバー存在チェック
         if membership.nil?
           render json: { error: "You are not a member of this group" }, status: :forbidden
           return
         end
 
-        # Admin権限チェック
+        #Admin権限チェック
         if membership.role != "admin"
           render json: { error: "You are not allowed to perform this action. Admin permission required." }, status: :forbidden
         end
