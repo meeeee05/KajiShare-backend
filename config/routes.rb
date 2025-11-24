@@ -14,9 +14,13 @@ Rails.application.routes.draw do
         resources :memberships, only: [:index, :create, :destroy]
       end
 
+      #タスクとアサインメントの関係
+      resources :tasks, only: [:index, :show] do
+        resources :assignments, only: [:index, :create]
+      end
+      
       #独立したリソース
-      resources :tasks, only: [:index, :show]
-      resources :assignments, only: [:index, :show, :update, :destroy]
+      resources :assignments, only: [:show, :update, :destroy]
       resources :memberships, only: [:index, :show, :update]
       resources :evaluations, only: [:create, :update, :show, :index]
     end
