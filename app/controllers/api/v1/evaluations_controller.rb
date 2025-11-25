@@ -1,6 +1,7 @@
 module Api
   module V1
     class EvaluationsController < ApplicationController
+      #レコード個別取得
       before_action :set_evaluation, only: [:show, :update]
 
       # GET /api/v1/evaluations
@@ -40,11 +41,11 @@ module Api
         @evaluation = Evaluation.find(params[:id])
       end
 
-      #カラムに合わせたpermit
+      #データの生合成を保持
       #assignment_id
       #evaluator_id
       #score
-      #comments
+      #feedback
       def evaluation_params
         params.require(:evaluation).permit(:assignment_id, :evaluator_id, :score, :feedback)
       end
