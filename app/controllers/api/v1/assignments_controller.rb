@@ -5,21 +5,32 @@ module Api
     class AssignmentsController < ApplicationController
       before_action :set_task, only: [:index, :create]
       before_action :set_assignment, only: [:show, :update, :destroy]
-      before_action :authenticate_user!  #全アクションで認証必須
+      # ログイン済みか確認　→ ログインしていない場合はログイン画面へリダイレクト
+      before_action :authenticate_user!  
       before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
       before_action :check_admin_permission, only: [:destroy]  #削除はAdmin権限のみ
 
       # GET /api/v1/tasks/:task_id/assignments
+      # assignmentsに入ってきた情報全てをJSON形式で返す
       def index
         assignments = @task.assignments
         render json: assignments
       end
 
+      # GET /api/v1/assignments/:id
+      # 特定のassignmentをJSON形式で返す
+      def show
+        render json: @assignment
+      end
+
+
       # POST /api/v1/tasks/:task_id/assignments - Member権限以上が必要
+      # 新しいAssignmentを作成して保存する
       def create
+        #オブジェクトの作成
         assignment = @task.assignments.build(assignment_params)
         
-        #現在のユーザーのmembership_idを自動設定
+        #現在のユーザーのmembership_idを自動設定、整合性確保
         membership = Membership.find_by(user_id: current_user.id, group_id: @task.group_id)
         assignment.membership_id = membership.id if membership
 
@@ -28,11 +39,6 @@ module Api
         else
           render json: { errors: assignment.errors.full_messages }, status: :unprocessable_entity
         end
-      end
-
-      # GET /api/v1/assignments/:id
-      def show
-        render json: @assignment
       end
 
       # PATCH/PUT /api/v1/assignments/:id - Member権限以上が必要
@@ -47,12 +53,12 @@ module Api
       # DELETE /api/v1/assignments/:id - Admin権限が必要
       def destroy
         begin
-          # トランザクション内で安全に削除
+          #トランザクション内で安全に削除
           ActiveRecord::Base.transaction do
             # 削除ログ記録
             Rails.logger.info "Deleting assignment (ID: #{@assignment.id}) from Task '#{@assignment.task.name}' by admin user #{current_user.name}"
             
-            # アサインメントを削除（dependent: :destroyにより関連データも自動削除）
+            #アサインメントを削除（関連データも削除）
             @assignment.destroy!
             
             render json: { 
@@ -86,9 +92,9 @@ module Api
         )
       end
 
-      #Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
+      # Member権限チェック：指定されたグループのメンバー（admin or member）以上の権限のみ操作可能
       def check_member_permission
-        #group_idの取得（アクションごとに取得）
+        # group_idの取得（アクションごとに取得）
         case action_name
         when 'index', 'create'
           group_id = @task.group_id
@@ -98,32 +104,32 @@ module Api
         
         membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
 
-        #メンバー存在チェック
+        # メンバー存在チェック
         if membership.nil?
           render json: { error: "You are not a member of this group" }, status: :forbidden
           return
         end
 
-        #アクティブメンバーチェック
+        # アクティブメンバーチェック
         unless membership.active?
           render json: { error: "Your membership is not active" }, status: :forbidden
         end
       end
 
-      #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
+      # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        #group_idの取得（削除時は既存レコードから）
+        # group_idの取得
         group_id = @assignment.task.group_id
         
         membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
 
-        #メンバー存在チェック
+        # メンバー存在チェック
         if membership.nil?
           render json: { error: "You are not a member of this group" }, status: :forbidden
           return
         end
 
-        #Admin権限チェック
+        # Admin権限チェック
         if membership.role != "admin"
           render json: { error: "You are not allowed to perform this action. Admin permission required." }, status: :forbidden
         end
