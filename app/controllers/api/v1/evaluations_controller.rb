@@ -41,7 +41,7 @@ module Api
         @evaluation = Evaluation.find(params[:id])
       end
 
-      #データの生合成を保持
+      #以下4つだけを取り出す、悪意あるデータは除外
       #assignment_id
       #evaluator_id
       #score
