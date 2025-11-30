@@ -21,7 +21,11 @@ Rails.application.routes.draw do
       
       #独立したリソース
       resources :assignments, only: [:show, :update, :destroy]
-      resources :memberships, only: [:index, :show, :update]
+      resources :memberships, only: [:index, :show, :update] do
+        member do
+          patch :change_role
+        end
+      end
       resources :evaluations, only: [:create, :update, :show, :index, :destroy]
     end
   end

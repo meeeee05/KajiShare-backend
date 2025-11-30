@@ -1,15 +1,31 @@
 module Api
   module V1
     class MembershipsController < ApplicationController
-      before_action :set_membership, only: [:show, :update, :destroy]
-      before_action :authenticate_user!, only: [:create, :update, :destroy]
-      before_action :check_admin_permission, only: [:create, :update, :destroy]
+      before_action :set_membership, only: [:show, :update, :destroy, :change_role]
+      before_action :authenticate_user!  # 全アクションで認証必須
+      before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
+      before_action :check_admin_permission, only: [:create, :update, :destroy, :change_role]
 
+      # GET /api/v1/memberships - 現在のユーザーが参加しているグループのメンバーシップのみ返す
       def index
-        memberships = Membership.all
+        # クエリパラメータでgroup_idが指定された場合はそのグループのみ、未指定なら全参加グループ
+        if params[:group_id].present?
+          group_id = params[:group_id]
+          # 指定されたグループのメンバーかチェック
+          user_membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
+          if user_membership.nil?
+            return render json: { error: "You are not a member of this group" }, status: :forbidden
+          end
+          memberships = Membership.where(group_id: group_id)
+        else
+          # 現在のユーザーが参加している全グループのメンバーシップ
+          user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
+          memberships = Membership.where(group_id: user_group_ids)
+        end
         render json: memberships
       end
 
+      # GET /api/v1/memberships/:id - 同じグループのメンバーのみアクセス可能
       def show
         render json: @membership
       end
@@ -49,6 +65,41 @@ module Api
         head :no_content
       end
 
+      # PATCH /api/v1/memberships/:id/change_role - Admin権限でロール変更専用エンドポイント
+      def change_role
+        new_role = params[:role]
+        
+        unless ['admin', 'member'].include?(new_role)
+          return render json: { error: "Invalid role. Must be 'admin' or 'member'" }, status: :unprocessable_entity
+        end
+
+        # 現在のロールと同じ場合は何もしない
+        if @membership.role == new_role
+          return render json: { message: "Role is already #{new_role}" }, status: :ok
+        end
+
+        # AdminからMemberに変更する場合の制限チェック
+        if @membership.role == "admin" && new_role == "member"
+          admin_count = Membership.where(group_id: @membership.group_id, role: "admin").count
+          if admin_count <= 1
+            return render json: { 
+              error: "Cannot demote the last admin. Please promote another member to admin first." 
+            }, status: :forbidden
+          end
+        end
+
+        # ロール変更実行
+        if @membership.update(role: new_role)
+          Rails.logger.info "Role changed: User #{@membership.user.name} in Group #{@membership.group.name} from #{@membership.role_was} to #{new_role} by admin #{current_user.name}"
+          render json: { 
+            message: "Role successfully changed to #{new_role}",
+            membership: @membership 
+          }, status: :ok
+        else
+          render json: { errors: @membership.errors.full_messages }, status: :unprocessable_entity
+        end
+      end
+
       private
 
       def set_membership
@@ -64,6 +115,35 @@ module Api
       # Admin権限変更用の専用パラメータ（将来的に専用エンドポイントで使用、新規メンバー追加時にroleを指定）
       def role_params
         params.require(:membership).permit(:role)
+      end
+
+      # Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
+      def check_member_permission
+        # indexアクションでgroup_id指定がない場合はチェック不要（既にフィルタリング済み）
+        if action_name == 'index' && params[:group_id].blank?
+          return
+        end
+        
+        # group_idの取得
+        group_id = case action_name
+        when 'index'
+          params[:group_id]
+        when 'show'
+          @membership.group_id
+        end
+        
+        membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
+
+        # メンバー存在チェック
+        if membership.nil?
+          render json: { error: "You are not a member of this group" }, status: :forbidden
+          return
+        end
+
+        # アクティブメンバーチェック
+        unless membership.active?
+          render json: { error: "Your membership is not active" }, status: :forbidden
+        end
       end
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能

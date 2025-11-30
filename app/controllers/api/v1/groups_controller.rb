@@ -1,16 +1,19 @@
 class Api::V1::GroupsController < ApplicationController
   before_action :set_group, only: [:show, :update, :destroy]
   # ログインしているかどうか
-  before_action :authenticate_user!, only: [:create, :update, :destroy]
+  before_action :authenticate_user!  # 全アクションで認証必須
+  before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
   before_action :check_admin_permission, only: [:update, :destroy]
 
-  # GET /api/v1/groups
+  # GET /api/v1/groups - 現在のユーザーが参加しているグループのみ返す
   def index
-    groups = Group.all
+    # 現在のユーザーが参加している（アクティブな）グループのみ取得
+    user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
+    groups = Group.where(id: user_group_ids)
     render json: groups
   end
 
-  # GET /api/v1/groups/:id
+  # GET /api/v1/groups/:id - グループメンバーのみアクセス可能
   def show
     render json: @group
   end
@@ -75,6 +78,25 @@ class Api::V1::GroupsController < ApplicationController
 
   def group_params
     params.require(:group).permit(:name, :share_key, :assign_mode, :balance_type, :active)
+  end
+
+  # Member権限チェック：指定されたグループのmember以上のみ操作可能
+  def check_member_permission
+    # indexアクションの場合は特別処理不要（indexで既にフィルタリング済み）
+    return if action_name == 'index'
+    
+    membership = Membership.find_by(user_id: current_user.id, group_id: @group.id)
+
+    # メンバー存在チェック
+    if membership.nil?
+      render json: { error: "You are not a member of this group" }, status: :forbidden
+      return
+    end
+
+    # アクティブメンバーチェック(一時的に停止中のメンバーは拒否)
+    unless membership.active?
+      render json: { error: "Your membership is not active" }, status: :forbidden
+    end
   end
 
   # 権限チェック：Adminのみがグループの更新・削除を実行可能
