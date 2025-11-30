@@ -22,7 +22,7 @@ Rails.application.routes.draw do
       #独立したリソース
       resources :assignments, only: [:show, :update, :destroy]
       resources :memberships, only: [:index, :show, :update]
-      resources :evaluations, only: [:create, :update, :show, :index]
+      resources :evaluations, only: [:create, :update, :show, :index, :destroy]
     end
   end
 

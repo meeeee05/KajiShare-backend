@@ -92,7 +92,7 @@ module Api
         )
       end
 
-      # Member権限チェック：指定されたグループのメンバー（admin or member）以上の権限のみ操作可能
+      # 権限チェック：指定されたグループのmember以上の権限のみ操作可能
       def check_member_permission
         # group_idの取得（アクションごとに取得）
         case action_name
