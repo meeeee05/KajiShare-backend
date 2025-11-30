@@ -66,6 +66,7 @@ module Api
       end
 
       # PATCH /api/v1/memberships/:id/change_role - Admin権限でロール変更専用エンドポイント
+      # AdminからMemberへの変更時に『最後のAdminではないか』を実施
       def change_role
         new_role = params[:role]
         
@@ -106,18 +107,13 @@ module Api
         @membership = Membership.find(params[:id])
       end
 
-      #現状既存メンバーのrole変更はできない
+      # 通常の更新用パラメータ（roleは専用エンドポイントで変更）
       def membership_params
-        # roleの変更を禁止、権限変更が不可能
+        # roleの変更は専用のchange_roleエンドポイントでのみ可能
         params.require(:membership).permit(:user_id, :group_id, :workload_ratio, :active)
       end
 
-      # Admin権限変更用の専用パラメータ（将来的に専用エンドポイントで使用、新規メンバー追加時にroleを指定）
-      def role_params
-        params.require(:membership).permit(:role)
-      end
-
-      # Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
+      # Member権限チェック：指定されたグループのmember以上のみ操作可能
       def check_member_permission
         # indexアクションでgroup_id指定がない場合はチェック不要（既にフィルタリング済み）
         if action_name == 'index' && params[:group_id].blank?
