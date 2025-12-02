@@ -74,7 +74,7 @@ module Api
         params.require(:task).permit(:name, :description, :point)
       end
 
-      #Member権限チェック：指定されたグループのメンバー（admin or member）のみ操作可能
+      #Member権限チェック：指定されたグループのmember権限以上のみ操作可能
       def check_member_permission
         #group_idの取得（アクションごとに取得）
         case action_name
