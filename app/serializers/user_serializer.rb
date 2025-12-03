@@ -8,10 +8,12 @@ class UserSerializer < ActiveModel::Serializer
   attribute :groups_count
   attribute :active_groups
 
+  # アクティブなメンバーの数
   def groups_count
     object.memberships.where(active: true).count
   end
 
+  # アクティブなグループの一覧
   def active_groups
     return [] unless include_memberships?
     object.memberships.includes(:group).where(active: true).map(&:group)
