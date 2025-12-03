@@ -4,7 +4,7 @@ class UserSerializer < ActiveModel::Serializer
   # 関連データの包含（オプション）
   has_many :memberships, serializer: MembershipSerializer, if: :include_memberships?
 
-  # カスタム属性
+  # カスタム　属性
   attribute :groups_count
   attribute :active_groups
 
