@@ -13,7 +13,7 @@ class UserSerializer < ActiveModel::Serializer
     object.memberships.where(active: true).count
   end
 
-  # アクティブなグループの一覧
+  # アクティブなグループの一覧 
   def active_groups
     return [] unless include_memberships?
     object.memberships.includes(:group).where(active: true).map(&:group)
