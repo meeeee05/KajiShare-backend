@@ -9,13 +9,13 @@ class Api::V1::GroupsController < ApplicationController
   def index
     # 現在のユーザーが参加している（アクティブな）グループのみ取得
     user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
-    groups = Group.where(id: user_group_ids)
-    render json: groups
+    groups = Group.includes(:memberships, :tasks).where(id: user_group_ids)
+    render json: groups, each_serializer: GroupSerializer
   end
 
   # GET /api/v1/groups/:id - グループメンバーのみアクセス可能
   def show
-    render json: @group
+    render json: @group, serializer: GroupSerializer
   end
 
   # POST /api/v1/groups
@@ -30,7 +30,7 @@ class Api::V1::GroupsController < ApplicationController
           role: "admin",
           active: true
         )
-        render json: group, status: :created
+        render json: group, serializer: GroupSerializer, status: :created
       else
         render json: { errors: group.errors.full_messages }, status: :unprocessable_entity
       end
@@ -42,7 +42,7 @@ class Api::V1::GroupsController < ApplicationController
   # PATCH/PUT /api/v1/groups/:id - Admin権限が必要（グループ情報編集）
   def update
     if @group.update(group_params)
-      render json: @group
+      render json: @group, serializer: GroupSerializer
     else
       render json: { errors: @group.errors.full_messages }, status: :unprocessable_entity
     end
