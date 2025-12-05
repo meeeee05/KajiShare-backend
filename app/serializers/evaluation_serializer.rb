@@ -1,5 +1,5 @@
 class EvaluationSerializer < ActiveModel::Serializer
-  attributes :id, :score, :comment, :created_at, :updated_at
+  attributes :id, :score, :comment
 
   # 関連データ
   belongs_to :assignment, serializer: AssignmentSerializer

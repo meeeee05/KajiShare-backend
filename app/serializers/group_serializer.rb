@@ -1,5 +1,5 @@
 class GroupSerializer < ActiveModel::Serializer
-  attributes :id, :name, :share_key, :assign_mode, :balance_type, :active, :created_at, :updated_at
+  attributes :id, :name, :share_key, :assign_mode, :balance_type, :active
 
   # 関連データの包含
   has_many :memberships, serializer: MembershipSerializer

@@ -1,6 +1,6 @@
 class AssignmentSerializer < ActiveModel::Serializer
   attributes :id, :assigned_to_id, :assigned_by_id, :due_date, :completed_date, 
-             :comment, :created_at, :updated_at
+             :comment
 
   # 関連データ
   belongs_to :task, serializer: TaskSerializer

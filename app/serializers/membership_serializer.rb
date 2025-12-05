@@ -1,9 +1,9 @@
 class MembershipSerializer < ActiveModel::Serializer
-  attributes :id, :role, :workload_ratio, :active, :created_at, :updated_at
+  attributes :id, :role, :workload_ratio, :active
 
   # 関連データ
-  belongs_to :user, serializer: UserSerializer
-  belongs_to :group, serializer: GroupSerializer
+  belongs_to :user, serializer: SimpleUserSerializer
+  belongs_to :group, serializer: SimpleGroupSerializer
 
   # カスタム属性
   attribute :user_name

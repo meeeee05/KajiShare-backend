@@ -1,5 +1,5 @@
 class TaskSerializer < ActiveModel::Serializer
-  attributes :id, :name, :description, :point, :created_at, :updated_at
+  attributes :id, :name, :description, :point
 
   # 関連データ
   belongs_to :group, serializer: GroupSerializer
