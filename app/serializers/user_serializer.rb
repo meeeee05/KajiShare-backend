@@ -1,5 +1,5 @@
 class UserSerializer < ActiveModel::Serializer
-  attributes :id, :google_sub, :name, :email, :picture, :account_type, :created_at, :updated_at
+  attributes :id, :name, :email, :picture, :account_type
 
   # 関連データの包含（オプション）
   has_many :memberships, serializer: MembershipSerializer, if: :include_memberships?
