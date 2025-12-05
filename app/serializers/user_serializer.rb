@@ -19,8 +19,6 @@ class UserSerializer < ActiveModel::Serializer
     object.memberships.includes(:group).where(active: true).map(&:group)
   end
 
-  private
-
   def include_memberships?
     # コンテキストで制御可能
     instance_options[:include_memberships] || false
