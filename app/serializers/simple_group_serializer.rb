@@ -4,4 +4,8 @@ class SimpleGroupSerializer < ActiveModel::Serializer
   def members_count
     object.memberships.where(active: true).count
   end
+
+  # has_many がない = 他のSerializerを呼ばない
+  # attribute で関連データを取得しない
+
 end
