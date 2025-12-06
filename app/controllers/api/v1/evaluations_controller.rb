@@ -10,12 +10,12 @@ module Api
       # GET /api/v1/evaluations
       def index
         evaluations = Evaluation.all
-        render json: evaluations
+        render json: evaluations, each_serializer: EvaluationSerializer
       end
 
       # GET /api/v1/evaluations/:id
       def show
-        render json: @evaluation
+        render json: @evaluation, serializer: EvaluationSerializer, current_user: current_user
       end
 
       # POST /api/v1/evaluations
@@ -23,7 +23,7 @@ module Api
         evaluation = Evaluation.new(evaluation_params)
 
         if evaluation.save
-          render json: evaluation, status: :created
+          render json: evaluation, serializer: EvaluationSerializer, current_user: current_user, status: :created
         else
           render json: { errors: evaluation.errors.full_messages }, status: :unprocessable_entity
         end
@@ -32,9 +32,9 @@ module Api
       # PATCH/PUT /api/v1/evaluations/:id
       def update
         if @evaluation.update(evaluation_params)
-          render json: @evaluation
+          render json: @evaluation, serializer: EvaluationSerializer, current_user: current_user
         else
-          render json: { errors: @evaluation.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: evaluation.errors.full_messages }, status: :unprocessable_entity
         end
       end
 

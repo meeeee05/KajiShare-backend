@@ -11,14 +11,14 @@ module Api
       def index
         #グループ内のタスク一覧（メンバーシップチェック済み）
         tasks = @group.tasks
-        render json: tasks
+        render json: tasks, each_serializer: TaskSerializer
       end
 
       # POST /api/v1/groups/:group_id/tasks - Member権限以上が必要
       def create
         task = @group.tasks.new(task_params)
         if task.save
-          render json: task, status: :created
+          render json: task, serializer: TaskSerializer, status: :created
         else
           render json: { errors: task.errors.full_messages }, status: :unprocessable_entity
         end
@@ -26,13 +26,13 @@ module Api
 
       # GET /api/v1/tasks/:id
       def show
-        render json: @task
+        render json: @task, serializer: TaskSerializer
       end
 
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要
       def update
         if @task.update(task_params)
-          render json: @task
+          render json: @task, serializer: TaskSerializer
         else
           render json: { errors: @task.errors.full_messages }, status: :unprocessable_entity
         end

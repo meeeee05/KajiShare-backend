@@ -22,18 +22,18 @@ module Api
           user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
           memberships = Membership.where(group_id: user_group_ids)
         end
-        render json: memberships
+        render json: memberships, each_serializer: MembershipSerializer
       end
 
       # GET /api/v1/memberships/:id - 同じグループのメンバーのみアクセス可能
       def show
-        render json: @membership
+        render json: @membership, serializer: MembershipSerializer
       end
 
       def create
         membership = Membership.new(membership_params)
         if membership.save
-          render json: membership, status: :created
+          render json: membership, serializer: MembershipSerializer, status: :created
         else
           render json: { errors: membership.errors.full_messages }, status: :unprocessable_entity
         end
@@ -41,7 +41,7 @@ module Api
 
       def update
         if @membership.update(membership_params)
-          render json: @membership
+          render json: @membership, serializer: MembershipSerializer
         else
           render json: { errors: @membership.errors.full_messages }, status: :unprocessable_entity
         end
@@ -94,7 +94,7 @@ module Api
           Rails.logger.info "Role changed: User #{@membership.user.name} in Group #{@membership.group.name} from #{@membership.role_was} to #{new_role} by admin #{current_user.name}"
           render json: { 
             message: "Role successfully changed to #{new_role}",
-            membership: @membership 
+            membership: MembershipSerializer.new(@membership).as_json
           }, status: :ok
         else
           render json: { errors: @membership.errors.full_messages }, status: :unprocessable_entity

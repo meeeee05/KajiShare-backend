@@ -14,13 +14,13 @@ module Api
       # assignmentsに入ってきた情報全てをJSON形式で返す
       def index
         assignments = @task.assignments
-        render json: assignments
+        render json: assignments, each_serializer: AssignmentSerializer
       end
 
       # GET /api/v1/assignments/:id
       # 特定のassignmentをJSON形式で返す
       def show
-        render json: @assignment
+        render json: @assignment, serializer: AssignmentSerializer
       end
 
 
@@ -35,7 +35,7 @@ module Api
         assignment.membership_id = membership.id if membership
 
         if assignment.save
-          render json: assignment, status: :created
+          render json: assignment, serializer: AssignmentSerializer, status: :created
         else
           render json: { errors: assignment.errors.full_messages }, status: :unprocessable_entity
         end
@@ -44,7 +44,7 @@ module Api
       # PATCH/PUT /api/v1/assignments/:id - Member権限以上が必要
       def update
         if @assignment.update(assignment_params)
-          render json: @assignment
+          render json: @assignment, serializer: AssignmentSerializer
         else
           render json: { errors: @assignment.errors.full_messages }, status: :unprocessable_entity
         end

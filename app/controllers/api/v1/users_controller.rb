@@ -7,17 +7,17 @@ module Api
 
       # GET /api/v1/users - 現在のユーザーの情報のみ返す（セキュリティ向上）
       def index
-        render json: [current_user]  # 自分の情報のみ返す
+        render json: [current_user], each_serializer: UserSerializer
       end
 
       def show
-        render json: @user
+        render json: @user, serializer: UserSerializer
       end
 
       def create
         user = User.new(user_params)
         if user.save
-          render json: user, status: :created
+          render json: user, serializer: UserSerializer, status: :created
         else
           render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
         end
@@ -25,7 +25,7 @@ module Api
 
       def update
         if @user.update(user_params)
-          render json: @user
+          render json: @user, serializer: UserSerializer
         else
           render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
         end

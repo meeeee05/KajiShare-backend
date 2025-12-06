@@ -3,7 +3,7 @@ class AssignmentSerializer < ActiveModel::Serializer
              :comment
 
   # 関連データ
-  belongs_to :task, serializer: TaskSerializer
+  belongs_to :task, serializer: SimpleTaskSerializer
   belongs_to :membership, serializer: MembershipSerializer
 
   # カスタム属性
