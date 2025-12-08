@@ -5,6 +5,7 @@ class UserSerializer < ActiveModel::Serializer
   has_many :memberships, serializer: MembershipSerializer, if: :include_memberships?
 
   # カスタム属性
+  # テーブル内に存在しないデータを取得しにいく
   attribute :groups_count
   attribute :active_groups
 
