@@ -14,7 +14,7 @@ class ApplicationController < ActionController::API
     }
   end
 
-  #DB接続状況をJSON形式で確認
+  # DB接続状況をJSON形式で確認
   def database_status
     begin
       #実際にクエリを実行して接続確認
@@ -25,19 +25,19 @@ class ApplicationController < ActionController::API
     end
   end
 
-  #ユーザー認証
+  # ユーザー認証
   def authenticate_user!
     auth_header = request.headers["Authorization"]
     
-    #Bearer <token>形式チェック
+    # Bearer <token>形式チェック
     unless auth_header&.start_with?("Bearer ")
       return handle_unauthorized("No authentication token provided")
     end
     
-    #Bearer部分を排除→トークンのみ抽出
+    # Bearer部分を排除→トークンのみ抽出
     token = auth_header.split("Bearer ").last
     
-    #test用トークンチェック
+    # test用トークンチェック
     if Rails.env.development? && token.start_with?("test_")
       case token
       when "test_admin_taro"
@@ -57,7 +57,7 @@ class ApplicationController < ActionController::API
       return
     end
     
-    #GoogleIDToken検証
+    # GoogleIDToken検証
     begin
       require "google-id-token"
       validator = GoogleIDToken::Validator.new
