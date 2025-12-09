@@ -81,7 +81,16 @@ class ApplicationController < ActionController::API
 
   private
 
-  # 401 Unauthorized エラーハンドリング
+    # 400: Bad Request
+  def handle_parameter_missing(exception)
+    render json: { 
+      error: "Bad Request", 
+      message: "Required parameter missing: #{exception.param}",
+      status: 400
+    }, status: :bad_request
+    end
+
+  # 401: Unauthorized
   def handle_unauthorized(message = "Unauthorized access")
     render json: { 
       error: "Unauthorized", 
@@ -90,7 +99,7 @@ class ApplicationController < ActionController::API
     }, status: :unauthorized
   end
 
-  # 403 Forbidden エラーハンドリング
+  # 403: Forbidden
   def handle_forbidden(message = "Access denied")
     render json: { 
       error: "Forbidden", 
@@ -99,7 +108,7 @@ class ApplicationController < ActionController::API
     }, status: :forbidden
   end
 
-  # 404 Not Found エラーハンドリング
+  # 404: Not Found
   def handle_not_found(exception = nil)
     message = exception&.message || "Resource not found"
     render json: { 
@@ -109,7 +118,7 @@ class ApplicationController < ActionController::API
     }, status: :not_found
   end
 
-  # 422 Unprocessable Entity エラーハンドリング
+  # 422: Unprocessable Entity
   def handle_unprocessable_entity(errors)
     render json: { 
       error: "Unprocessable Entity", 
@@ -119,16 +128,7 @@ class ApplicationController < ActionController::API
     }, status: :unprocessable_entity
   end
 
-  # 400 Bad Request エラーハンドリング
-  def handle_parameter_missing(exception)
-    render json: { 
-      error: "Bad Request", 
-      message: "Required parameter missing: #{exception.param}",
-      status: 400
-    }, status: :bad_request
-  end
-
-  # 500 Internal Server Error エラーハンドリング
+  # 500: Internal Server Error
   def handle_internal_error(exception)
     Rails.logger.error "Internal Server Error: #{exception.message}"
     Rails.logger.error exception.backtrace.join("\n")
