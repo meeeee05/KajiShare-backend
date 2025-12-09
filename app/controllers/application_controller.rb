@@ -1,5 +1,10 @@
 class ApplicationController < ActionController::API
-
+  
+  # 例外ハンドリング
+  rescue_from StandardError, with: :handle_internal_error
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
+  rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing
+  
   #test用エンドポイント
   def test
     render json: { 
@@ -26,7 +31,7 @@ class ApplicationController < ActionController::API
     
     #Bearer <token>形式チェック
     unless auth_header&.start_with?("Bearer ")
-      return render json: { error: "Unauthorized - No token provided" }, status: :unauthorized
+      return handle_unauthorized("No authentication token provided")
     end
     
     #Bearer部分を排除→トークンのみ抽出
@@ -42,11 +47,11 @@ class ApplicationController < ActionController::API
       when "test_nomember"
         @current_user = User.new(id: 999, google_sub: "nomember123")  #非メンバー
       else
-        return render json: { error: "Invalid test token" }, status: :unauthorized
+        return handle_unauthorized("Invalid test token")
       end
       
       unless @current_user&.persisted?
-        return render json: { error: "Test user not found" }, status: :unauthorized
+        return handle_unauthorized("Test user not found in database")
       end
       
       return
@@ -62,15 +67,76 @@ class ApplicationController < ActionController::API
       @current_user = User.find_by(google_sub: sub)
       
       unless @current_user
-        render json: { error: "User not found. Please register first." }, status: :unauthorized
+        return handle_unauthorized("User not found. Please register first.")
       end
     rescue StandardError => e
       Rails.logger.error "Token validation error: #{e.message}"
-      render json: { error: "Invalid token" }, status: :unauthorized
+      return handle_unauthorized("Invalid or expired authentication token")
     end
   end
 
   def current_user
     @current_user
+  end
+
+  private
+
+  # 401 Unauthorized エラーハンドリング
+  def handle_unauthorized(message = "Unauthorized access")
+    render json: { 
+      error: "Unauthorized", 
+      message: message,
+      status: 401
+    }, status: :unauthorized
+  end
+
+  # 403 Forbidden エラーハンドリング
+  def handle_forbidden(message = "Access denied")
+    render json: { 
+      error: "Forbidden", 
+      message: message,
+      status: 403
+    }, status: :forbidden
+  end
+
+  # 404 Not Found エラーハンドリング
+  def handle_not_found(exception = nil)
+    message = exception&.message || "Resource not found"
+    render json: { 
+      error: "Not Found", 
+      message: message,
+      status: 404
+    }, status: :not_found
+  end
+
+  # 422 Unprocessable Entity エラーハンドリング
+  def handle_unprocessable_entity(errors)
+    render json: { 
+      error: "Unprocessable Entity", 
+      message: "Validation failed",
+      errors: errors,
+      status: 422
+    }, status: :unprocessable_entity
+  end
+
+  # 400 Bad Request エラーハンドリング
+  def handle_parameter_missing(exception)
+    render json: { 
+      error: "Bad Request", 
+      message: "Required parameter missing: #{exception.param}",
+      status: 400
+    }, status: :bad_request
+  end
+
+  # 500 Internal Server Error エラーハンドリング
+  def handle_internal_error(exception)
+    Rails.logger.error "Internal Server Error: #{exception.message}"
+    Rails.logger.error exception.backtrace.join("\n")
+    
+    render json: { 
+      error: "Internal Server Error", 
+      message: Rails.env.production? ? "Something went wrong" : exception.message,
+      status: 500
+    }, status: :internal_server_error
   end
 end

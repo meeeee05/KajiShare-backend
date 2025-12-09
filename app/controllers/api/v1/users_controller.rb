@@ -19,7 +19,7 @@ module Api
         if user.save
           render json: user, serializer: UserSerializer, status: :created
         else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+          handle_unprocessable_entity(user.errors.full_messages)
         end
       end
 
@@ -27,7 +27,7 @@ module Api
         if @user.update(user_params)
           render json: @user, serializer: UserSerializer
         else
-          render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+          handle_unprocessable_entity(@user.errors.full_messages)
         end
       end
 
@@ -40,6 +40,8 @@ module Api
 
       def set_user
         @user = User.find(params[:id])
+      rescue ActiveRecord::RecordNotFound
+        handle_not_found("User with ID #{params[:id]} not found")
       end
 
       def user_params
@@ -49,7 +51,7 @@ module Api
       # ユーザー権限チェック：自分の情報のみアクセス可能
       def check_user_permission
         unless @user.id == current_user.id
-          render json: { error: "You can only access your own user information" }, status: :forbidden
+          handle_forbidden("You can only access your own user information")
         end
       end
     end
