@@ -109,8 +109,16 @@ class ApplicationController < ActionController::API
   end
 
   # 404: Not Found
-  def handle_not_found(exception = nil)
-    message = exception&.message || "Resource not found"
+  def handle_not_found(message_or_exception = nil)
+    message = case message_or_exception
+              when String
+                message_or_exception
+              when Exception
+                message_or_exception.message
+              else
+                "Resource not found"
+              end
+    
     render json: { 
       error: "Not Found", 
       message: message,
