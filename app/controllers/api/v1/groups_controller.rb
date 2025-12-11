@@ -85,6 +85,7 @@ class Api::V1::GroupsController < ApplicationController
 
   private
 
+  # group存在チェック
   def set_group
     @group = Group.find(params[:id])
   rescue ActiveRecord::RecordNotFound => e

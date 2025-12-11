@@ -1,9 +1,10 @@
 class ApplicationController < ActionController::API
   
-  # 例外ハンドリング
+  # 例外ハンドリングをキャッチ
+  #予期しないエラー、DB接続エラーなどは500で返す
   rescue_from StandardError, with: :handle_internal_error
-  rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
-  rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found  #404 レコード未発見
+  rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing  #400 パラメータ不足
   
   #test用エンドポイント
   def test
