@@ -8,9 +8,9 @@ module Api
 
       # GET /api/v1/memberships - 現在のユーザーが参加しているグループのメンバーシップのみ返す
       def index
-        # 認証確認
+        # 認証確認（current_userがない場合）
         unless current_user
-          handle_unauthorized("Authentication required to view memberships")
+          handle_unauthorized("Authentication required to view memberships- 表示させるには認証が必要です")
           return
         end
 
@@ -78,7 +78,7 @@ module Api
           return
         end
 
-        # Group最後のAdminは削除できない　→ しようとした場合の保護
+        # Group最後のAdminは削除できないようにする　422
         if @membership.role == "admin"
           admin_count = Membership.where(group_id: @membership.group_id, role: "admin").count
           if admin_count <= 1
@@ -94,7 +94,7 @@ module Api
       end
 
       # PATCH /api/v1/memberships/:id/change_role - Admin権限でロール変更専用エンドポイント
-      # AdminからMemberへの変更時に『最後のAdminではないか』を実施
+      # AdminからMemberへの変更時に、最後のAdminではないかを確認
       def change_role
         # 認証確認
         unless current_user
@@ -108,7 +108,7 @@ module Api
           return handle_unprocessable_entity(["Invalid role. Must be 'admin' or 'member'"])
         end
 
-        # 現在のロールと同じ場合は何もしない
+        # 現在のロール（権限）と同じ場合は何もしない
         if @membership.role == new_role
           return render json: { message: "Role is already #{new_role}" }, status: :ok
         end
