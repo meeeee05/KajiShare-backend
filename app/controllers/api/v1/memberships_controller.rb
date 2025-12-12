@@ -14,7 +14,7 @@ module Api
           return
         end
 
-        # クエリパラメータでgroup_idが指定された場合はそのグループのみ、未指定なら全参加グループ
+        # クエリパラメータでgroup_idが指定された場合はそのグループのみ、未指定なら全ての参加グループを取得
         if params[:group_id].present?
           group_id = params[:group_id]
           # 指定されたグループのメンバーかチェック
@@ -24,7 +24,7 @@ module Api
           end
           memberships = Membership.where(group_id: group_id)
         else
-          # 現在のユーザーが参加している全グループのメンバーシップ
+          # 現在のユーザーが参加している全グループのメンバーシップを取得
           user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
           memberships = Membership.where(group_id: user_group_ids)
         end
