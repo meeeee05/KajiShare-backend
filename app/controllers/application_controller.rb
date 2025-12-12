@@ -1,9 +1,10 @@
 class ApplicationController < ActionController::API
   
-  # 例外ハンドリング
+  # 例外ハンドリングをキャッチ
+  #予期しないエラー、DB接続エラーなどは500で返す
   rescue_from StandardError, with: :handle_internal_error
-  rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
-  rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found  #404 レコード未発見
+  rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing  #400 パラメータ不足
   
   #test用エンドポイント
   def test
@@ -109,8 +110,16 @@ class ApplicationController < ActionController::API
   end
 
   # 404: Not Found
-  def handle_not_found(exception = nil)
-    message = exception&.message || "Resource not found"
+  def handle_not_found(message_or_exception = nil)
+    message = case message_or_exception
+              when String
+                message_or_exception
+              when Exception
+                message_or_exception.message
+              else
+                "Resource not found"
+              end
+    
     render json: { 
       error: "Not Found", 
       message: message,

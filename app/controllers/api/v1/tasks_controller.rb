@@ -9,6 +9,12 @@ module Api
 
       # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能
       def index
+        # 認証確認
+        unless current_user
+          handle_unauthorized("Authentication required to view tasks")
+          return
+        end
+
         #グループ内のタスク一覧（メンバーシップチェック済み）
         tasks = @group.tasks
         render json: tasks, each_serializer: TaskSerializer
@@ -16,30 +22,54 @@ module Api
 
       # POST /api/v1/groups/:group_id/tasks - Member権限以上が必要
       def create
+        # 認証確認
+        unless current_user
+          handle_unauthorized("Authentication required to create tasks")
+          return
+        end
+
         task = @group.tasks.new(task_params)
         if task.save
           render json: task, serializer: TaskSerializer, status: :created
         else
-          render json: { errors: task.errors.full_messages }, status: :unprocessable_entity
+          handle_unprocessable_entity(task.errors.full_messages)
         end
       end
 
       # GET /api/v1/tasks/:id
       def show
+        # 認証確認
+        unless current_user
+          handle_unauthorized("Authentication required to view task details")
+          return
+        end
+
         render json: @task, serializer: TaskSerializer
       end
 
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要
       def update
+        # 認証確認
+        unless current_user
+          handle_unauthorized("Authentication required to update tasks")
+          return
+        end
+
         if @task.update(task_params)
           render json: @task, serializer: TaskSerializer
         else
-          render json: { errors: @task.errors.full_messages }, status: :unprocessable_entity
+          handle_unprocessable_entity(@task.errors.full_messages)
         end
       end
 
       # DELETE /api/v1/tasks/:id - Admin権限が必要
       def destroy
+        # 認証確認
+        unless current_user
+          handle_unauthorized("Authentication required to delete tasks")
+          return
+        end
+
         begin
           #トランザクション内で安全に削除
           ActiveRecord::Base.transaction do
@@ -56,7 +86,7 @@ module Api
           end
         rescue => e
           Rails.logger.error "Failed to delete task: #{e.message}"
-          render json: { error: "Failed to delete task: #{e.message}" }, status: :unprocessable_entity
+          handle_unprocessable_entity(["Failed to delete task: #{e.message}"])
         end
       end
 
@@ -64,10 +94,14 @@ module Api
 
       def set_group
         @group = Group.find(params[:group_id])
+      rescue ActiveRecord::RecordNotFound => e
+        handle_not_found("Group with ID #{params[:group_id]} not found")
       end
 
       def set_task
         @task = Task.find(params[:id])
+      rescue ActiveRecord::RecordNotFound => e
+        handle_not_found("Task with ID #{params[:id]} not found")
       end
 
       def task_params
@@ -76,6 +110,12 @@ module Api
 
       #Member権限チェック：指定されたグループのmember権限以上のみ操作可能
       def check_member_permission
+        # current_userが存在しない場合（認証失敗）
+        unless current_user
+          handle_unauthorized("Authentication required to access task information")
+          return
+        end
+
         #group_idの取得（アクションごとに取得）
         case action_name
         when 'index', 'create'
@@ -88,18 +128,24 @@ module Api
 
         #メンバー存在チェック
         if membership.nil?
-          render json: { error: "You are not a member of this group" }, status: :forbidden
+          handle_forbidden("You are not a member of this group")
           return
         end
 
         #アクティブメンバーチェック
         unless membership.active?
-          render json: { error: "Your membership is not active" }, status: :forbidden
+          handle_forbidden("Your membership is not active")
         end
       end
 
       #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
+        # current_userが存在しない場合（認証失敗）
+        unless current_user
+          handle_unauthorized("Authentication required for admin operations")
+          return
+        end
+
         #group_idの取得（削除時は既存レコードから）
         group_id = @task.group_id
         
@@ -107,13 +153,13 @@ module Api
 
         #メンバー存在チェック
         if membership.nil?
-          render json: { error: "You are not a member of this group" }, status: :forbidden
+          handle_forbidden("You are not a member of this group")
           return
         end
 
         #Admin権限チェック
         if membership.role != "admin"
-          render json: { error: "You are not allowed to perform this action. Admin permission required." }, status: :forbidden
+          handle_forbidden("You are not allowed to perform this action. Admin permission required.")
         end
       end
     end
