@@ -7,9 +7,11 @@ module Api
       before_action :set_assignment, only: [:show, :update, :destroy]
       # ログイン済みか確認　→ ログインしていない場合はログイン画面へリダイレクト
       before_action :authenticate_user!  
-      before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
-      before_action :check_admin_permission, only: [:destroy]  #削除はAdmin権限のみ
-
+      # 参照・作成・更新はMember権限以上
+      before_action :check_member_permission, only: [:index, :show, :create, :update]  
+      # 削除はAdmin権限のみ
+      before_action :check_admin_permission, only: [:destroy]  
+      
       # GET /api/v1/tasks/:task_id/assignments
       # assignmentsに入ってきた情報全てをJSON形式で返す
       def index
@@ -37,7 +39,7 @@ module Api
 
 
       # POST /api/v1/tasks/:task_id/assignments - Member権限以上が必要
-      # 新しいAssignmentを作成して保存する
+      # 新しいAssignmentを作成して保存
       def create
         # 認証確認
         unless current_user
@@ -67,10 +69,14 @@ module Api
           return
         end
 
-        if @assignment.update(assignment_params)
-          render json: @assignment, serializer: AssignmentSerializer
-        else
-          handle_unprocessable_entity(@assignment.errors.full_messages)
+        begin
+          if @assignment.update(assignment_params)
+            render json: @assignment, serializer: AssignmentSerializer
+          else
+            handle_unprocessable_entity(@assignment.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to update assignment: #{e.message}")
         end
       end
 
