@@ -108,12 +108,14 @@ module Api
 
       private
 
+      # 該当するタスクを取得
       def set_task
         @task = Task.find(params[:task_id])
       rescue ActiveRecord::RecordNotFound => e
         handle_not_found("Task with ID #{params[:task_id]} not found")
       end
 
+     # 該当するタスクを取得
       def set_assignment
         @assignment = Assignment.find(params[:id])
       rescue ActiveRecord::RecordNotFound => e
