@@ -20,7 +20,6 @@ module Api
           handle_unauthorized("Authentication required to view assignments")
           return
         end
-
         assignments = @task.assignments
         render json: assignments, each_serializer: AssignmentSerializer
       end
@@ -33,7 +32,6 @@ module Api
           handle_unauthorized("Authentication required to view assignment details")
           return
         end
-
         render json: @assignment, serializer: AssignmentSerializer
       end
 
