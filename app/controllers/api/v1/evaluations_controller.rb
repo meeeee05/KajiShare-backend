@@ -41,6 +41,7 @@ module Api
         begin
           evaluation = Evaluation.new(evaluation_params)
 
+          # DBに保存
           if evaluation.save
             render json: evaluation, serializer: EvaluationSerializer, current_user: current_user, status: :created
           else
