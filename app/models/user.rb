@@ -8,7 +8,8 @@ class User < ApplicationRecord
   has_many :memberships, dependent: :destroy
   has_many :groups, through: :memberships
   has_many :assignments, through: :memberships, dependent: :destroy
-  has_many :evaluations, foreign_key: 'evaluator_id', dependent: :destroy
+  has_many :evaluations, foreign_key: :evaluator_id, dependent: :destroy
+
 
   validates :google_sub, :name, :email, presence: true
 end
