@@ -10,6 +10,22 @@ class User < ApplicationRecord
   has_many :assignments, through: :memberships, dependent: :destroy
   has_many :evaluations, foreign_key: :evaluator_id, dependent: :destroy
 
+  # フォーマットチェック
+  validates :google_sub,
+            presence: true,
+            uniqueness: true
 
-  validates :google_sub, :name, :email, presence: true
+  validates :email,
+            presence: true,
+            uniqueness: true,
+            format: { with: URI::MailTo::EMAIL_REGEXP }
+
+  validates :name,
+            presence: true,
+            length: { maximum: 50 }
+
+  validates :account_type,
+            presence: true,
+            inclusion: { in: %w[user admin] }
+
 end
