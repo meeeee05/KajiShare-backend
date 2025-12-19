@@ -6,5 +6,23 @@ class Group < ApplicationRecord
   has_many :assignments, through: :tasks, dependent: :destroy
   has_many :evaluations, through: :assignments, dependent: :destroy
 
-  validates :name, presence: true
+  # バリデーション（フォーマットチェック）
+  validates :name,
+            presence: true,
+            length: { maximum: 100 }
+
+  validates :share_key,
+            presence: true,
+            uniqueness: true
+
+  validates :assign_mode,
+            presence: true,
+            inclusion: { in: %w[equal ratio manual] }
+
+  validates :balance_type,
+            presence: true,
+            inclusion: { in: %w[point time] }
+
+  validates :active,
+            inclusion: { in: [true, false] }
 end
