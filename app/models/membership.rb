@@ -15,6 +15,9 @@ class Membership < ApplicationRecord
 
   validates :workload_ratio,
             numericality: {
+
+              # 0以上100以下の値を許可
+              only_integer: true,
               greater_than: 0,
               less_than_or_equal_to: 100
             },
