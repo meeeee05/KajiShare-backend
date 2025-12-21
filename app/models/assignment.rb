@@ -14,21 +14,15 @@ class Assignment < ApplicationRecord
     completed: "completed"
   }
 
-  # =====================
-  # Validations
-  # =====================
-
-  # 必須
+  # バリデーション（フォーマットチェック）
   validates :task_id, presence: true
   validates :membership_id, presence: true
   validates :status, presence: true
+  validate :completed_date_after_due_date
+  validate :completed_date_requires_completed_status
 
   # 同じタスクを同じ人に二重で割り当てない
   validates :task_id, uniqueness: { scope: :membership_id }
-
-  # 日付の整合性
-  validate :completed_date_after_due_date
-  validate :completed_date_requires_completed_status
 
   private
 
