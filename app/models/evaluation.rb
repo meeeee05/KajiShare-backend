@@ -15,8 +15,8 @@ class Evaluation < ApplicationRecord
               less_than_or_equal_to: 5
             }
 
-  # コメント（任意・最大500文字）
+  # コメント（任意・最大100文字）
   validates :feedback,
-            length: { maximum: 500 },
+            length: { maximum: 100 },
             allow_blank: true
 end
