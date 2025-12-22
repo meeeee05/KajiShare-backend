@@ -5,9 +5,7 @@ class Assignment < ApplicationRecord
   belongs_to :membership
   has_many :evaluations, dependent: :destroy
 
-  # =====================
-  # Enum
-  # =====================
+  # 定数値を設定
   enum status: {
     pending: "pending",
     in_progress: "in_progress",
