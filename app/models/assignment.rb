@@ -5,10 +5,10 @@ class Assignment < ApplicationRecord
   belongs_to :membership
   has_many :evaluations, dependent: :destroy
 
-  # 定数値を設定
-  enum status: {
+  # ステータスを管理
+  enum :status, {
     pending: "pending",
-    in_progress: "in_progress",
+    in_progress: "in_progress", 
     completed: "completed"
   }
 
