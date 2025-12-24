@@ -128,7 +128,8 @@ module Api
           :assigned_by_id,
           :due_date,
           :completed_date,
-          :comment
+          :comment,
+          :status
         )
       end
 

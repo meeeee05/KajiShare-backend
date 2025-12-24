@@ -29,9 +29,8 @@ class AssignmentSerializer < ActiveModel::Serializer
   end
 
   def status
-    return 'completed' if object.completed_date.present?
-    return 'overdue' if object.due_date && object.due_date < Date.current
-    'pending'
+    # データベースのstatusカラムを使用（enum値）
+    object.status
   end
 
   def days_until_due
