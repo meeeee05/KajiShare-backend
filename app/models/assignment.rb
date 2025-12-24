@@ -21,7 +21,7 @@ class Assignment < ApplicationRecord
   # 同じタスクを同じ人に二重で割り当てない
   validates :task_id, uniqueness: { scope: :membership_id }
 
-  # completed_dateの状態に応じてstatusを自動更新（コールバック）
+  # completed_dateの状態に応じてstatusを自動更新（コールバック = 自動更新）
   before_save :auto_update_status_based_on_completed_date
 
   private
