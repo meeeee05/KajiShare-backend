@@ -28,7 +28,7 @@ class Evaluation < ApplicationRecord
 
   # Assignmentのstatusが"completed"でない場合は評価を作成できない
   def assignment_must_be_completed
-    # assignmentがない場合は他のバリデーションに任せる
+    # assignmentがblankの時は何もしない
     return if assignment.blank?
 
     unless assignment.completed?
