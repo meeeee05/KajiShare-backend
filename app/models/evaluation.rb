@@ -20,6 +20,9 @@ class Evaluation < ApplicationRecord
             length: { maximum: 100 },
             allow_blank: true
 
+  # 二重評価防止：同じ評価者が同じAssignmentを複数回評価することを防ぐ
+  validates :assignment_id, uniqueness: { scope: :evaluator_id, message: "は既に評価済みです" }
+
   # 完了したタスクのみ評価可能
   # assignmentテーブルのstatusカラムが"completed"の時のみ評価を許可
   validate :assignment_must_be_completed
