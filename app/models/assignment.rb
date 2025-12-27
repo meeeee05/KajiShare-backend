@@ -51,7 +51,6 @@ class Assignment < ApplicationRecord
       errors.add(:completed_date, "は期限日以降である必要があります")
     end
   end
-end
 
   # completed_date と status の整合性を保つ
   def sync_status_with_completed_date
