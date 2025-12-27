@@ -1,5 +1,4 @@
 # app/controllers/api/v1/assignments_controller.rb
-
 module Api
   module V1
     class AssignmentsController < ApplicationController
@@ -15,11 +14,6 @@ module Api
       # GET /api/v1/tasks/:task_id/assignments
       # assignmentsに入ってきた情報全てをJSON形式で返す
       def index
-        # 認証確認
-        unless current_user
-          handle_unauthorized("Authentication required to view assignments")
-          return
-        end
         assignments = @task.assignments
         render json: assignments, each_serializer: AssignmentSerializer
       end
@@ -27,11 +21,6 @@ module Api
       # GET /api/v1/assignments/:id
       # 特定のassignmentをJSON形式で返す
       def show
-        # 認証確認
-        unless current_user
-          handle_unauthorized("Authentication required to view assignment details")
-          return
-        end
         render json: @assignment, serializer: AssignmentSerializer
       end
 
@@ -39,12 +28,6 @@ module Api
       # POST /api/v1/tasks/:task_id/assignments - Member権限以上が必要
       # 新しいAssignmentを作成して保存
       def create
-        # 認証確認
-        unless current_user
-          handle_unauthorized("Authentication required to create assignments")
-          return
-        end
-
         #オブジェクトの作成
         assignment = @task.assignments.build(assignment_params)
         
@@ -61,12 +44,6 @@ module Api
 
       # PATCH/PUT /api/v1/assignments/:id - Member権限以上が必要
       def update
-        # 認証確認
-        unless current_user
-          handle_unauthorized("Authentication required to update assignments")
-          return
-        end
-
         begin
           if @assignment.update(assignment_params)
             render json: @assignment, serializer: AssignmentSerializer
@@ -80,12 +57,6 @@ module Api
 
       # DELETE /api/v1/assignments/:id - Admin権限が必要
       def destroy
-        # 認証確認
-        unless current_user
-          handle_unauthorized("Authentication required to delete assignments")
-          return
-        end
-
         begin
           #トランザクション内で安全に削除
           ActiveRecord::Base.transaction do
@@ -121,26 +92,18 @@ module Api
       rescue ActiveRecord::RecordNotFound => e
         handle_not_found("Assignment with ID #{params[:id]} not found")
       end
-
+      
+      # Strong Parameters(以下パラメータを受け入れ)
       def assignment_params
         params.require(:assignment).permit(
-          :assigned_to_id,
-          :assigned_by_id,
-          :due_date,
-          :completed_date,
-          :comment,
-          :status
-        )
-      end
-
+            :due_date,
+            :completed_date,
+            :comment
+            )
+        end
+        
       # 権限チェック：指定されたグループのmember以上の権限のみ操作可能
       def check_member_permission
-        # current_userが存在しない場合（認証失敗）
-        unless current_user
-          handle_unauthorized("Authentication required to access assignment information")
-          return
-        end
-
         # group_idの取得（アクションごとに取得）
         case action_name
         when 'index', 'create'
@@ -165,12 +128,6 @@ module Api
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        # current_userが存在しない場合（認証失敗）
-        unless current_user
-          handle_unauthorized("Authentication required for admin operations")
-          return
-        end
-
         # group_idの取得
         group_id = @assignment.task.group_id
         
