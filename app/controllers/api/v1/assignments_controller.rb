@@ -92,18 +92,16 @@ module Api
       rescue ActiveRecord::RecordNotFound => e
         handle_not_found("Assignment with ID #{params[:id]} not found")
       end
-
+      
+      # Strong Parameters(以下パラメータを受け入れ)
       def assignment_params
         params.require(:assignment).permit(
-          :assigned_to_id,
-          :assigned_by_id,
-          :due_date,
-          :completed_date,
-          :comment,
-          :status
-        )
-      end
-
+            :due_date,
+            :completed_date,
+            :comment
+            )
+        end
+        
       # 権限チェック：指定されたグループのmember以上の権限のみ操作可能
       def check_member_permission
         # group_idの取得（アクションごとに取得）
