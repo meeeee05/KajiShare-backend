@@ -5,8 +5,11 @@ class Membership < ApplicationRecord
   has_many :assignments, dependent: :destroy
   has_many :evaluations, through: :assignments, dependent: :destroy
 
+  # ロール管理（enumを使用してヘルパーメソッドを自動生成）
+  enum :role, { member: "member", admin: "admin" }
+
   #バリデーション（フォーマットチェック）
-  validates :role, presence: true, inclusion: { in: %w[admin member] }
+  validates :role, presence: true
 
   validates :user_id, uniqueness: {
     scope: :group_id,

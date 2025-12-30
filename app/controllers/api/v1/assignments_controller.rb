@@ -116,8 +116,11 @@ module Api
         group_id = @assignment.task.group_id
         membership = current_user_membership(group_id)
 
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+        return handle_forbidden("You are not a member of this group")
+        if membership.nil?
+        
+        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") 
+        unless membership.role == "admin"
       end
 
       # アクション別のgroup_id取得
