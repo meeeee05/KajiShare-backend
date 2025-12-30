@@ -79,14 +79,14 @@ module Api
 
       private
 
-      # 該当するタスクを取得
+      # 該当するtaskを取得
       def set_task
         @task = Task.find(params[:task_id])
       rescue ActiveRecord::RecordNotFound => e
         handle_not_found("Task with ID #{params[:task_id]} not found")
       end
 
-     # 該当するタスクを取得
+      # 該当するassignmentを取得
       def set_assignment
         @assignment = Assignment.find(params[:id])
       rescue ActiveRecord::RecordNotFound => e
@@ -133,7 +133,7 @@ module Api
         end
       end
 
-      # 現在ユーザーのメンバーシップ取得
+      # 現在のユーザーのメンバーシップ取得
       def current_user_membership(group_id)
         Membership.find_by(user_id: current_user.id, group_id: group_id)
       end
