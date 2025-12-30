@@ -32,7 +32,7 @@ module Api
         assignment = @task.assignments.build(assignment_params)
         
         #現在のユーザーのmembership_idを自動設定、整合性確保
-        membership = Membership.find_by(user_id: current_user.id, group_id: @task.group_id)
+        membership = current_user_membership(@task.group_id)
         assignment.membership_id = membership.id if membership
 
         if assignment.save
@@ -79,14 +79,14 @@ module Api
 
       private
 
-      # 該当するタスクを取得
+      # 該当するtaskを取得
       def set_task
         @task = Task.find(params[:task_id])
       rescue ActiveRecord::RecordNotFound => e
         handle_not_found("Task with ID #{params[:task_id]} not found")
       end
 
-     # 該当するタスクを取得
+      # 該当するassignmentを取得
       def set_assignment
         @assignment = Assignment.find(params[:id])
       rescue ActiveRecord::RecordNotFound => e
@@ -104,45 +104,39 @@ module Api
         
       # 権限チェック：指定されたグループのmember以上の権限のみ操作可能
       def check_member_permission
-        # group_idの取得（アクションごとに取得）
-        case action_name
-        when 'index', 'create'
-          group_id = @task.group_id
-        when 'show', 'update'
-          group_id = @assignment.task.group_id
-        end
+        group_id = get_group_id_for_action
+        membership = current_user_membership(group_id)
         
-        membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
-
-        # メンバー存在チェック
-        if membership.nil?
-          handle_forbidden("You are not a member of this group")
-          return
-        end
-
-        # アクティブメンバーチェック
-        unless membership.active?
-          handle_forbidden("Your membership is not active")
-        end
+        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("Your membership is not active") unless membership.active?
       end
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        # group_idの取得
         group_id = @assignment.task.group_id
-        
-        membership = Membership.find_by(user_id: current_user.id, group_id: group_id)
+        membership = current_user_membership(group_id)
 
-        # メンバー存在チェック
+        return handle_forbidden("You are not a member of this group")
         if membership.nil?
-          handle_forbidden("You are not a member of this group")
-          return
-        end
+        
+        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") 
+        unless membership.role == "admin"
+      end
 
-        # Admin権限チェック
-        if membership.role != "admin"
-          handle_forbidden("You are not allowed to perform this action. Admin permission required.")
+      # アクション別のgroup_id取得
+      def get_group_id_for_action
+        case action_name
+        when 'index', 'create'
+          @task.group_id
+        when 'show', 'update'
+          @assignment.task.group_id
         end
+      end
+
+      # 現在のユーザーのメンバーシップ取得
+      def current_user_membership(group_id)
+        Membership.find_by(user_id: current_user.id, group_id: group_id)
+      end
       end
     end
   end
