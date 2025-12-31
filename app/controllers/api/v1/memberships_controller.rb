@@ -2,7 +2,7 @@ module Api
   module V1
     class MembershipsController < ApplicationController
       before_action :set_membership, only: [:show, :update, :destroy, :change_role]
-      before_action :authenticate_user!  # 全アクションで認証必須
+      before_action :authenticate_user!  # 全アクションで認証
       before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
       before_action :check_admin_permission, only: [:create, :update, :destroy, :change_role]
 
@@ -48,7 +48,7 @@ module Api
       end
 
       def destroy
-        # Group最後のAdminは削除できないようにする　422
+        # Group最後のAdminは削除できないようにする　(422error)
         if @membership.role == "admin"
           admin_count = Membership.where(group_id: @membership.group_id, role: "admin").count
           if admin_count <= 1
