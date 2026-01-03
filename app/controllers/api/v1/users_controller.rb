@@ -11,13 +11,14 @@ module Api
       end
 
       def show
-        render json: @user, serializer: UserSerializer
+        render_user_success(@user)
       end
 
       def create
         user = User.new(user_params)
+        
         if user.save
-          render json: user, serializer: UserSerializer, status: :created
+          render_user_success(user, :created)
         else
           handle_unprocessable_entity(user.errors.full_messages)
         end
@@ -25,7 +26,7 @@ module Api
 
       def update
         if @user.update(user_params)
-          render json: @user, serializer: UserSerializer
+          render_user_success(@user)
         else
           handle_unprocessable_entity(@user.errors.full_messages)
         end
@@ -48,11 +49,14 @@ module Api
         params.require(:user).permit(:google_sub, :name, :email, :picture, :account_type)
       end
 
+      # ユーザー情報のJSONレスポンスを生成
+      def render_user_success(user, status = :ok)
+        render json: user, serializer: UserSerializer, status: status
+      end
+
       # ユーザー権限チェック：自分の情報のみアクセス可能
       def check_user_permission
-        unless @user.id == current_user.id
-          handle_forbidden("You can only access your own user information")
-        end
+        return handle_forbidden("You can only access your own user information") unless @user.id == current_user.id
       end
     end
   end
