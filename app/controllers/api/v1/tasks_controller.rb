@@ -18,7 +18,7 @@ module Api
       def create
         task = @group.tasks.new(task_params)
         if task.save
-          render json: task, serializer: TaskSerializer, status: :created
+          render_task_success(task, :created)
         else
           handle_unprocessable_entity(task.errors.full_messages)
         end
@@ -26,13 +26,13 @@ module Api
 
       # GET /api/v1/tasks/:id
       def show
-        render json: @task, serializer: TaskSerializer
+        render_task_success(@task)
       end
 
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要
       def update
         if @task.update(task_params)
-          render json: @task, serializer: TaskSerializer
+          render_task_success(@task)
         else
           handle_unprocessable_entity(@task.errors.full_messages)
         end
@@ -81,6 +81,11 @@ module Api
       # 共通メソッド：指定されたグループに対するユーザーのメンバーシップを取得
       def current_user_membership(group_id)
         Membership.find_by(user_id: current_user.id, group_id: group_id)
+      end
+
+      # 共通メソッド：タスク情報のJSONレスポンスを生成
+      def render_task_success(task, status = :ok)
+        render json: task, serializer: TaskSerializer, status: status
       end
 
       # グループIDを取得するヘルパーメソッド
