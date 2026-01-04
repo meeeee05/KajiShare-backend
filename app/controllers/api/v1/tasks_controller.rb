@@ -7,11 +7,16 @@ module Api
       before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
       before_action :check_admin_permission, only: [:destroy]  # 削除はAdmin権限のみ
 
-      # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能
+      # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能（一覧表示）
       def index
         #グループ内のタスク一覧（メンバーシップチェック済み）
         tasks = @group.tasks
         render json: tasks, each_serializer: TaskSerializer
+      end
+
+      # GET /api/v1/tasks/:id（詳細表示） - グループメンバーのみアクセス可能
+      def show
+        render_task_success(@task)
       end
 
       # POST /api/v1/groups/:group_id/tasks - Member権限以上が必要
@@ -22,11 +27,6 @@ module Api
         else
           handle_unprocessable_entity(task.errors.full_messages)
         end
-      end
-
-      # GET /api/v1/tasks/:id
-      def show
-        render_task_success(@task)
       end
 
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要

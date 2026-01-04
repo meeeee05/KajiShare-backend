@@ -27,13 +27,13 @@ module Api
 
       # GET /api/v1/memberships/:id - 同じグループのメンバーのみアクセス可能
       def show
-        render json: @membership, serializer: MembershipSerializer
+        render_membership_success(@membership)
       end
 
       def create
         membership = Membership.new(membership_params)
         if membership.save
-          render json: membership, serializer: MembershipSerializer, status: :created
+          render_membership_success(membership, :created)
         else
           handle_unprocessable_entity(membership.errors.full_messages)
         end
@@ -41,20 +41,15 @@ module Api
 
       def update
         if @membership.update(membership_params)
-          render json: @membership, serializer: MembershipSerializer
+          render_membership_success(@membership)
         else
           handle_unprocessable_entity(@membership.errors.full_messages)
         end
       end
 
       def destroy
-        # Group最後のAdminは削除できないようにする　(422error)
-        if @membership.role == "admin"
-          admin_count = Membership.where(group_id: @membership.group_id, role: "admin").count
-          if admin_count <= 1
-            return handle_forbidden("Cannot delete the last admin of the group. Please assign admin role to another member first.")
-          end
-        end
+        # 最後のAdminチェック
+        return unless ensure_not_last_admin(@membership, "delete the last admin of the group")
 
         # 削除ログ記録
         Rails.logger.info "Deleting membership: User #{@membership.user.name} from Group #{@membership.group.name} by admin #{current_user.name}"
@@ -78,11 +73,8 @@ module Api
         end
 
         # AdminからMemberに変更する場合の制限チェック
-        if @membership.role == "admin" && new_role == "member"
-          admin_count = Membership.where(group_id: @membership.group_id, role: "admin").count
-          if admin_count <= 1
-            return handle_forbidden("Cannot demote the last admin. Please promote another member to admin first.")
-          end
+        if @membership.admin? && new_role == "member"
+          return unless ensure_not_last_admin(@membership, "demote the last admin")
         end
 
         # ロール変更実行
@@ -116,6 +108,23 @@ module Api
         Membership.find_by(user_id: current_user.id, group_id: group_id)
       end
 
+      # 共通メソッド：メンバーシップ情報のJSONレスポンスを生成
+      def render_membership_success(membership, status = :ok)
+        render json: membership, serializer: MembershipSerializer, status: status
+      end
+
+      # 共通メソッド：最後のAdminチェック
+      def ensure_not_last_admin(membership, action_description = "perform this action")
+        return true unless membership.admin?
+        
+        admin_count = Membership.where(group_id: membership.group_id, role: "admin").count
+        if admin_count <= 1
+          handle_forbidden("Cannot #{action_description}. Please assign admin role to another member first.")
+          return false
+        end
+        true
+      end
+
       # Member権限チェック：指定されたグループのmember以上のみ操作可能
       def check_member_permission
         # indexアクションでgroup_id指定がない場合はチェック不要（既にフィルタリング済み）
@@ -141,7 +150,7 @@ module Api
         membership = current_user_membership(group_id)
 
         return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.role == "admin"
+        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
     end
   end
