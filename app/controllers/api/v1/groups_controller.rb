@@ -18,7 +18,7 @@ class Api::V1::GroupsController < ApplicationController
     render_group_success(@group)
   end
 
-  # POST /api/v1/groups
+  # POST /api/v1/groups - グループメンバーの登録
   def create
     group = Group.new(group_params)
 
@@ -40,7 +40,7 @@ class Api::V1::GroupsController < ApplicationController
     handle_unprocessable_entity(["Failed to create group: #{e.message}"])
   end
 
-  # PATCH/PUT /api/v1/groups/:id - Admin権限が必要（グループ情報編集）
+  # PATCH/PUT /api/v1/groups/:id - グループ情報編集（Admin権限が必要）
   def update
     if @group.update(group_params)
       render_group_success(@group)
@@ -49,12 +49,12 @@ class Api::V1::GroupsController < ApplicationController
     end
   end
 
-  # DELETE /api/v1/groups/:id - Admin権限が必要
+  # DELETE /api/v1/groups/:id - グループ情報削除（Admin権限が必要）
   def destroy
     begin
-      # トランザクション内で安全に削除
+      # トランザクション内で削除
       ActiveRecord::Base.transaction do
-        # 関連データの削除ログ
+        # 関連データの削除ログ作成
         Rails.logger.info "Deleting group '#{@group.name}' (ID: #{@group.id}) by admin user #{current_user.name}"
         
         # グループを削除（dependent: :destroyにより関連データも自動削除）
@@ -80,6 +80,7 @@ class Api::V1::GroupsController < ApplicationController
     handle_not_found("Group with ID #{params[:id]} not found")
   end
 
+  # Strong Parameters：グループパラメータ許可設定(不正な属性の混入を防ぐ)
   def group_params
     params.require(:group).permit(:name, :share_key, :assign_mode, :balance_type, :active)
   end
@@ -94,9 +95,9 @@ class Api::V1::GroupsController < ApplicationController
     render json: group, serializer: GroupSerializer, status: status
   end
 
-  # Member権限チェック：指定されたグループのmember以上のみ操作可能
+  # 権限チェック：指定されたグループのmember以上のみ操作可能
   def check_member_permission
-    # indexアクションの場合は特別処理不要（indexで既にフィルタリング済み）
+    # indexアクションの場合は特別処理不要
     return if action_name == 'index'
     
     membership = current_user_membership(@group.id)

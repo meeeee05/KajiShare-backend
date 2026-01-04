@@ -10,10 +10,12 @@ module Api
         render json: [current_user], each_serializer: UserSerializer
       end
 
+      # GET /api/v1/users/:id
       def show
         render_user_success(@user)
       end
 
+      # POST /api/v1/users
       def create
         user = User.new(user_params)
         
@@ -24,6 +26,7 @@ module Api
         end
       end
 
+      # PATCH/PUT /api/v1/users/:id
       def update
         if @user.update(user_params)
           render_user_success(@user)
@@ -32,24 +35,46 @@ module Api
         end
       end
 
+      # DELETE /api/v1/users/:id
       def destroy
-        @user.destroy
-        head :no_content
+        begin
+          # トランザクション内で削除
+          ActiveRecord::Base.transaction do
+            # 削除ログ記録
+            Rails.logger.info "Deleting user '#{@user.name}' (ID: #{@user.id}, Email: #{@user.email}) by user #{current_user.name}"
+            
+            # 関連データの影響を記録（軽量版）
+            Rails.logger.info "Deleting user with all associated memberships and assignments"
+            
+            # ユーザーを削除（destroyにより関連データも自動削除）
+            @user.destroy!
+            
+            render json: { 
+              message: "User '#{@user.name}' has been successfully deleted",
+              deleted_at: Time.current
+            }, status: :ok
+          end
+        rescue => e
+          Rails.logger.error "Failed to delete user: #{e.message}"
+          handle_unprocessable_entity(["Failed to delete user: #{e.message}"])
+        end
       end
 
       private
 
+      # IDに基づきユーザーを取得
       def set_user
         @user = User.find(params[:id])
       rescue ActiveRecord::RecordNotFound
         handle_not_found("User with ID #{params[:id]} not found")
       end
 
+      # Strong Parameters：ユーザーパラメータ許可設定(不正な属性の混入を防ぐ)
       def user_params
         params.require(:user).permit(:google_sub, :name, :email, :picture, :account_type)
       end
 
-      # ユーザー情報のJSONレスポンスを生成
+      # 共通メソッド：ユーザー情報のJSONレスポンスを生成
       def render_user_success(user, status = :ok)
         render json: user, serializer: UserSerializer, status: status
       end
