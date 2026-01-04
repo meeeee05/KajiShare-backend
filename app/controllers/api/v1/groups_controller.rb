@@ -7,12 +7,6 @@ class Api::V1::GroupsController < ApplicationController
 
   # GET /api/v1/groups - 現在のユーザーが参加しているグループのみ返す
   def index
-    # 認証確認
-    unless current_user
-      handle_unauthorized("Authentication required to view groups")
-      return
-    end
-
     # 現在のユーザーが参加している（アクティブな）グループのみ取得
     user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
     groups = Group.includes(:memberships, :tasks).where(id: user_group_ids)
@@ -21,17 +15,11 @@ class Api::V1::GroupsController < ApplicationController
 
   # GET /api/v1/groups/:id - グループメンバーのみアクセス可能
   def show
-    render json: @group, serializer: GroupSerializer
+    render_group_success(@group)
   end
 
   # POST /api/v1/groups
   def create
-    # 認証確認
-    unless current_user
-      handle_unauthorized("Authentication required to create groups")
-      return
-    end
-
     group = Group.new(group_params)
 
     ActiveRecord::Base.transaction do
@@ -42,7 +30,7 @@ class Api::V1::GroupsController < ApplicationController
           role: "admin",
           active: true
         )
-        render json: group, serializer: GroupSerializer, status: :created
+        render_group_success(group, :created)
       else
         handle_unprocessable_entity(group.errors.full_messages)
       end
@@ -55,7 +43,7 @@ class Api::V1::GroupsController < ApplicationController
   # PATCH/PUT /api/v1/groups/:id - Admin権限が必要（グループ情報編集）
   def update
     if @group.update(group_params)
-      render json: @group, serializer: GroupSerializer
+      render_group_success(@group)
     else
       handle_unprocessable_entity(@group.errors.full_messages)
     end
@@ -96,50 +84,32 @@ class Api::V1::GroupsController < ApplicationController
     params.require(:group).permit(:name, :share_key, :assign_mode, :balance_type, :active)
   end
 
+  # 共通メソッド：指定されたグループに対するユーザーのメンバーシップを取得
+  def current_user_membership(group_id)
+    Membership.find_by(user_id: current_user.id, group_id: group_id)
+  end
+
+  # 共通メソッド：グループ情報のJSONレスポンスを生成
+  def render_group_success(group, status = :ok)
+    render json: group, serializer: GroupSerializer, status: status
+  end
+
   # Member権限チェック：指定されたグループのmember以上のみ操作可能
   def check_member_permission
-    # current_userが存在しない場合（認証失敗）
-    unless current_user
-      handle_unauthorized("Authentication required to access group information")
-      return
-    end
-
     # indexアクションの場合は特別処理不要（indexで既にフィルタリング済み）
     return if action_name == 'index'
     
-    membership = Membership.find_by(user_id: current_user.id, group_id: @group.id)
+    membership = current_user_membership(@group.id)
 
-    # メンバー存在チェック
-    if membership.nil?
-      handle_forbidden("You are not a member of this group")
-      return
-    end
-
-    # アクティブメンバーチェック(一時的に停止中のメンバーは拒否)
-    unless membership.active?
-      handle_forbidden("Your membership is not active")
-    end
+    return handle_forbidden("You are not a member of this group") if membership.nil?
+    return handle_forbidden("Your membership is not active") unless membership.active?
   end
 
   # 権限チェック：Adminのみがグループの更新・削除を実行可能
   def check_admin_permission
-    # current_userが存在しない場合（認証失敗）
-    unless current_user
-      handle_unauthorized("Authentication required for admin operations")
-      return
-    end
+    membership = current_user_membership(@group.id)
 
-    membership = Membership.find_by(user_id: current_user.id, group_id: @group.id)
-
-    # メンバー存在チェック
-    if membership.nil?
-      handle_forbidden("You are not a member of this group")
-      return
-    end
-
-    # admin権限チェック
-    if membership.role != "admin"
-      handle_forbidden("You are not allowed to perform this action. Admin permission required.")
-    end
+    return handle_forbidden("You are not a member of this group") if membership.nil?
+    return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
   end
 end
