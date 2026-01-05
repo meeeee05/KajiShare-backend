@@ -26,11 +26,13 @@ class Assignment < ApplicationRecord
 
   private
 
+  # completed_date は due_date 以降であること
   def completed_date_after_due_date
     return unless completed_date.present? && due_date.present? && completed_date < due_date
     errors.add(:completed_date, "は期限日以降である必要があります")
   end
 
+  # completed_date に基づいて status を completed に変更
   def sync_status_with_completed_date
     self.status = completed_date.present? ? "completed" : (status.blank? ? "pending" : status)
   end

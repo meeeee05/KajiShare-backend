@@ -33,11 +33,7 @@ class Evaluation < ApplicationRecord
   # Assignmentのstatusが"completed"でない場合は評価を作成できない
   # test
   def assignment_must_be_completed
-    # assignmentがblankの時は何もしない
-    return if assignment.blank?
-
-    unless assignment.completed?
-      errors.add(:assignment, "は完了状態でないと評価できません")
-    end
+    return unless assignment&.present? && !assignment.completed?
+    errors.add(:assignment, "は完了状態でないと評価できません")
   end
 end
