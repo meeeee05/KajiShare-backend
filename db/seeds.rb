@@ -14,21 +14,22 @@ user1 = User.find_or_create_by!(google_sub: "1234567890abcde") do |u|
   u.name = "Taro Yamada"
   u.email = "taroo@example.com"
   u.picture = "https://example.com/avatar.png"
-  u.account_type = "general"
+  u.account_type = "user"
 end
 
 user2 = User.find_or_create_by!(google_sub: "abcdef1234567890") do |u|
   u.name = "Hanako Suzuki"
   u.email = "hanako@example.com"
   u.picture = "https://example.com/avatar2.png"
-  u.account_type = "general"
+  u.account_type = "user"
 end
 
 #Group
 group = Group.find_or_create_by!(name: "家事シェア") do |g|
   g.share_key = "abcd1234"
   g.assign_mode = "manual"
-  g.balance_type = "equal"
+  g.balance_type = "point"
+  g.active = true
 end
 
 #Membership
@@ -52,43 +53,50 @@ end
 task1 = Task.create!(
   group: group,
   name: "掃除",
-  description: "リビングの掃除をする"
+  description: "リビングの掃除をする",
+  point: 10
 )
 
 task2 = Task.create!(
   group: group,
   name: "洗濯",
-  description: "服を洗濯して干す"
+  description: "服を洗濯して干す",
+  point: 8
 )
 
 task3 = Task.create!(
   group: group,
   name: "料理",
-  description: "夕食を作る"
+  description: "夕食を作る",
+  point: 15
 )
 
 #Assignment
 assignment1 = Assignment.create!(
   task: task1,
-  membership: member1
+  membership: member1,
+  status: "completed",
+  completed_date: 1.day.ago
 )
 
 assignment2 = Assignment.create!(
   task: task2,
-  membership: member2
+  membership: member2,
+  status: "completed", 
+  completed_date: 2.days.ago
 )
 
 #Evaluation
 Evaluation.create!(
   assignment: assignment1,
-  evaluator_id: member2.id,
+  evaluator: member2.user,
   score: 5,
   feedback: "完璧！"
 )
 
 Evaluation.create!(
   assignment: assignment2,
-  evaluator_id: member1.id,
+  evaluator: member1.user,
   score: 4,
   feedback: "もう少し丁寧に干すと良いですね。"
 )
