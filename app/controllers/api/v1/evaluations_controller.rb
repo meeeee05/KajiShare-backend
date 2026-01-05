@@ -70,17 +70,15 @@ module Api
 
       private
 
+      # 該当IDのレコードをDBから取得
       def set_evaluation
         @evaluation = Evaluation.find(params[:id])
       rescue ActiveRecord::RecordNotFound => e
         handle_not_found("Evaluation with ID #{params[:id]} not found")
       end
 
-      #以下4つだけを取り出す、悪意あるデータは除外
-      #assignment_id
-      #evaluator_id
-      #score
-      #feedback
+      #以下4つだけを取り出す、悪意あるデータは除外（改ざんやなりすましを防ぐ）
+      #assignment_id, evaluator_id, score, feedback
       def evaluation_params
         params.require(:evaluation).permit(:assignment_id, :evaluator_id, :score, :feedback)
       end
@@ -105,7 +103,7 @@ module Api
         return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
 
-      # アクション別のgroup_id取得
+      # 権限チェックのためアクション別のgroup_id取得
       def get_group_id_for_action
         case action_name
         when 'index'

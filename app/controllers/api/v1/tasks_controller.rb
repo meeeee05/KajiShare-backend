@@ -74,6 +74,7 @@ module Api
         handle_not_found("Task with ID #{params[:id]} not found")
       end
 
+      # Strong Parameters：タスク作成・更新用(ユーザーが入力すべき3つの項目以外は一切受け取らない)
       def task_params
         params.require(:task).permit(:name, :description, :point)
       end
