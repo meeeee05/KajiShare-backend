@@ -7,32 +7,32 @@ module Api
       before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
       before_action :check_admin_permission, only: [:destroy]  # 削除はAdmin権限のみ
 
-      # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能
+      # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能（一覧表示）
       def index
         #グループ内のタスク一覧（メンバーシップチェック済み）
         tasks = @group.tasks
         render json: tasks, each_serializer: TaskSerializer
       end
 
+      # GET /api/v1/tasks/:id（詳細表示） - グループメンバーのみアクセス可能
+      def show
+        render_task_success(@task)
+      end
+
       # POST /api/v1/groups/:group_id/tasks - Member権限以上が必要
       def create
         task = @group.tasks.new(task_params)
         if task.save
-          render json: task, serializer: TaskSerializer, status: :created
+          render_task_success(task, :created)
         else
           handle_unprocessable_entity(task.errors.full_messages)
         end
       end
 
-      # GET /api/v1/tasks/:id
-      def show
-        render json: @task, serializer: TaskSerializer
-      end
-
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要
       def update
         if @task.update(task_params)
-          render json: @task, serializer: TaskSerializer
+          render_task_success(@task)
         else
           handle_unprocessable_entity(@task.errors.full_messages)
         end
@@ -74,6 +74,7 @@ module Api
         handle_not_found("Task with ID #{params[:id]} not found")
       end
 
+      # Strong Parameters：タスク作成・更新用(ユーザーが入力すべき3つの項目以外は一切受け取らない)
       def task_params
         params.require(:task).permit(:name, :description, :point)
       end
@@ -81,6 +82,11 @@ module Api
       # 共通メソッド：指定されたグループに対するユーザーのメンバーシップを取得
       def current_user_membership(group_id)
         Membership.find_by(user_id: current_user.id, group_id: group_id)
+      end
+
+      # 共通メソッド：タスク情報のJSONレスポンスを生成
+      def render_task_success(task, status = :ok)
+        render json: task, serializer: TaskSerializer, status: status
       end
 
       # グループIDを取得するヘルパーメソッド

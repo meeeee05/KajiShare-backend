@@ -21,7 +21,7 @@ module Api
       # GET /api/v1/assignments/:id
       # 特定のassignmentをJSON形式で返す
       def show
-        render json: @assignment, serializer: AssignmentSerializer
+        render_assignment_success(@assignment)
       end
 
 
@@ -36,7 +36,7 @@ module Api
         assignment.membership_id = membership.id if membership
 
         if assignment.save
-          render json: assignment, serializer: AssignmentSerializer, status: :created
+          render_assignment_success(assignment, :created)
         else
           handle_unprocessable_entity(assignment.errors.full_messages)
         end
@@ -46,7 +46,7 @@ module Api
       def update
         begin
           if @assignment.update(assignment_params)
-            render json: @assignment, serializer: AssignmentSerializer
+            render_assignment_success(@assignment)
           else
             handle_unprocessable_entity(@assignment.errors.full_messages)
           end
@@ -116,11 +116,8 @@ module Api
         group_id = @assignment.task.group_id
         membership = current_user_membership(group_id)
 
-        return handle_forbidden("You are not a member of this group")
-        if membership.nil?
-        
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") 
-        unless membership.role == "admin"
+        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
 
       # アクション別のgroup_id取得
@@ -137,6 +134,10 @@ module Api
       def current_user_membership(group_id)
         Membership.find_by(user_id: current_user.id, group_id: group_id)
       end
+
+      # 共通メソッド：アサインメント情報のJSONレスポンスを生成
+      def render_assignment_success(assignment, status = :ok)
+        render json: assignment, serializer: AssignmentSerializer, status: status
       end
     end
   end

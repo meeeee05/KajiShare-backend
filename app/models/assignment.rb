@@ -13,38 +13,27 @@ class Assignment < ApplicationRecord
     completed: "completed"
   }
 
-  # バリデーション（フォーマットチェック）
-  validates :task_id, presence: true
-  validates :membership_id, presence: true
-  validates :status, presence: true
-  validate :completed_date_after_due_date
-
-  # 同じタスクを同じ人に二重で割り当てない
+  # バリデーション
+  validates :task_id, :membership_id, :status, presence: true
   validates :task_id, uniqueness: { scope: :membership_id }
 
   # completed のときは completed_date 必須
   validates :completed_date, presence: true, if: :completed?
+  validate :completed_date_after_due_date
 
-  # コールバック
+  # コールバック - ステータスと完了日の整合性を自動調整
   before_validation :sync_status_with_completed_date
 
   private
 
-  # completed_date は due_date より前にならない
+  # completed_date は due_date 以降であること
   def completed_date_after_due_date
-    return if completed_date.blank? || due_date.blank?
-
-    if completed_date < due_date
-      errors.add(:completed_date, "は期限日以降である必要があります")
-    end
+    return unless completed_date.present? && due_date.present? && completed_date < due_date
+    errors.add(:completed_date, "は期限日以降である必要があります")
   end
 
-  # completed_date と status の整合性を保つ
+  # completed_date に基づいて status を completed に変更
   def sync_status_with_completed_date
-    if completed_date.present?
-      self.status = "completed"
-    elsif status.blank?
-      self.status = "pending"
-    end
+    self.status = completed_date.present? ? "completed" : (status.blank? ? "pending" : status)
   end
 end
