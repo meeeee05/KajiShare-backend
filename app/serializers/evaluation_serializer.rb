@@ -4,18 +4,22 @@ class EvaluationSerializer < ActiveModel::Serializer
   # 関連データ
   belongs_to :assignment, serializer: AssignmentSerializer
 
+  #　評価対象のタスク名を取得
   def assignment_task_name
     object.assignment&.task&.name
   end
 
+  # 評価対象のユーザー名を取得
   def evaluated_user_name
     object.assignment&.membership&.user&.name
   end
 
+  # 評価者のユーザー名を取得
   def evaluator_name
     instance_options[:current_user]&.name
   end
 
+  # スコア
   def score_label
     score_labels = {
       5 => 'Excellent',

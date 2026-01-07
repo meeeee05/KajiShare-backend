@@ -1,24 +1,30 @@
 class GroupSerializer < ActiveModel::Serializer
-  attributes :id, :name, :share_key, :assign_mode, :balance_type, :active
+  attributes :id, :name, :share_key, :assign_mode, :balance_type, :active,
+             :members_count, :admin_users, :member_users
 
   # 関連データの包含
   has_many :memberships, serializer: MembershipSerializer
   has_many :tasks, serializer: TaskSerializer
 
-  # カスタム属性
-  attribute :members_count
-  attribute :admin_users
-  attribute :member_users
-
   def members_count
-    object.memberships.where(active: true).count
+    active_memberships.count
   end
 
   def admin_users
-    object.memberships.includes(:user).where(role: 'admin', active: true).map(&:user)
+    users_by_role('admin')
   end
 
-  def member_users  
-    object.memberships.includes(:user).where(role: 'member', active: true).map(&:user)
+  def member_users
+    users_by_role('member')
+  end
+
+  private
+
+  def active_memberships
+    object.memberships.where(active: true)
+  end
+
+  def users_by_role(role)
+    active_memberships.includes(:user).where(role: role).map(&:user)
   end
 end
