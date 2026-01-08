@@ -1,4 +1,4 @@
-class SimpleUserSerializer < ActiveModel::Serializer
+class BasicUserSerializer < ActiveModel::Serializer
   attributes :id, :name, :email, :picture, :account_type
   
   # has_many がない = 他のSerializerを呼ばない

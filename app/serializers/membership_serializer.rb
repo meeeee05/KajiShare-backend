@@ -2,7 +2,7 @@ class MembershipSerializer < ActiveModel::Serializer
   attributes :id, :role, :workload_ratio, :active, :user_name, :group_name, 
              :assignments_count, :completed_assignments_count
 
-  belongs_to :user, serializer: SimpleUserSerializer
+  belongs_to :user, serializer: BasicUserSerializer
   belongs_to :group, serializer: BasicGroupSerializer
 
   # ユーザー名取得

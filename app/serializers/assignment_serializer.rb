@@ -3,7 +3,7 @@ class AssignmentSerializer < ActiveModel::Serializer
              :task_name, :assigned_to_name, :assigned_by_name, :status, :days_until_due, :is_overdue
 
   # 関連データ
-  belongs_to :task, serializer: SimpleTaskSerializer
+  belongs_to :task, serializer: BasicTaskSerializer
   belongs_to :membership, serializer: MembershipSerializer
 
   # Taskの名前を取得
