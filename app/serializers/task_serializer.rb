@@ -2,7 +2,7 @@ class TaskSerializer < ActiveModel::Serializer
   attributes :id, :name, :description, :point
 
   # 関連データ
-  belongs_to :group, serializer: SimpleGroupSerializer
+  belongs_to :group, serializer: BasicGroupSerializer
   has_many :assignments, serializer: AssignmentSerializer
 
   # カスタム属性

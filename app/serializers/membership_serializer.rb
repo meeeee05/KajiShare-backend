@@ -3,7 +3,7 @@ class MembershipSerializer < ActiveModel::Serializer
              :assignments_count, :completed_assignments_count
 
   belongs_to :user, serializer: SimpleUserSerializer
-  belongs_to :group, serializer: SimpleGroupSerializer
+  belongs_to :group, serializer: BasicGroupSerializer
 
   # ユーザー名取得
   def user_name

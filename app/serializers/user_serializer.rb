@@ -18,7 +18,7 @@ class UserSerializer < ActiveModel::Serializer
   def active_groups
     return [] unless include_memberships?
     groups = object.memberships.includes(:group).where(active: true).map(&:group)
-    groups.map { |group| SimpleGroupSerializer.new(group).as_json }
+    groups.map { |group| BasicGroupSerializer.new(group).as_json }
   end
 
   # メンバーシップの情報を含めるかどうか判定

@@ -1,4 +1,4 @@
-class SimpleGroupSerializer < ActiveModel::Serializer
+class BasicGroupSerializer < ActiveModel::Serializer
   attributes :id, :name, :share_key, :assign_mode, :balance_type, :active, :members_count
 
   # メンバー数をカウント
