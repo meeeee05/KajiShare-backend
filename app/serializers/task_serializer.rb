@@ -1,40 +1,42 @@
 class TaskSerializer < ActiveModel::Serializer
   attributes :id, :name, :description, :point
+  attributes :total_assignments, :completed_assignments, :pending_assignments, :completion_rate
 
   # 関連データ
   belongs_to :group, serializer: BasicGroupSerializer
   has_many :assignments, serializer: AssignmentSerializer
 
-  # カスタム属性
-  attribute :group_name
-  attribute :total_assignments
-  attribute :completed_assignments
-  attribute :pending_assignments
-  attribute :completion_rate
-
-  # タスクが属するグループの名前を取得
-  def group_name
-    object.group&.name
+  # アサインメント統計情報をメモ化して効率化
+  def assignment_stats
+    @assignment_stats ||= begin
+      assignments = object.assignments
+      completed = assignments.where.not(completed_date: nil)
+      {
+        total: assignments.count,
+        completed: completed.count,
+        pending: assignments.count - completed.count
+      }
+    end
   end
 
-  # タスクに関連するアサインメント（割り当て）の総数を取得
+  # 総アサインメント数を取得
   def total_assignments
-    object.assignments.count
+    assignment_stats[:total]
   end
 
   # 完了済みアサインメントの数を取得
   def completed_assignments
-    object.assignments.where.not(completed_date: nil).count
+    assignment_stats[:completed]
   end
 
   # 未完了（保留中）のアサインメント数を取得
   def pending_assignments
-    object.assignments.where(completed_date: nil).count
+    assignment_stats[:pending]
   end
 
-  # スクの完了率を取得
+  # タスクの完了率を取得
   def completion_rate
-    return 0 if total_assignments == 0
-    (completed_assignments.to_f / total_assignments * 100).round(2)
+    return 0 if assignment_stats[:total] == 0
+    (assignment_stats[:completed].to_f / assignment_stats[:total] * 100).round(2)
   end
 end
