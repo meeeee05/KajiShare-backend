@@ -1,4 +1,4 @@
-class SimpleTaskSerializer < ActiveModel::Serializer
+class BasicTaskSerializer < ActiveModel::Serializer
   attributes :id, :name, :description, :point
   
   # カスタム属性

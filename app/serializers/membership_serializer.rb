@@ -1,29 +1,42 @@
 class MembershipSerializer < ActiveModel::Serializer
-  attributes :id, :role, :workload_ratio, :active
+  attributes :id, :role, :workload_ratio, :active, :user_name, :group_name, 
+             :assignments_count, :completed_assignments_count
 
-  # 関連データ
-  belongs_to :user, serializer: SimpleUserSerializer
-  belongs_to :group, serializer: SimpleGroupSerializer
+  belongs_to :user, serializer: BasicUserSerializer
+  belongs_to :group, serializer: BasicGroupSerializer
 
-  # カスタム属性
-  attribute :user_name
-  attribute :group_name
-  attribute :assignments_count
-  attribute :completed_assignments_count
-
+  # ユーザー名取得
   def user_name
-    object.user&.name
+    user&.name
   end
 
+  # グループ名取得
   def group_name
-    object.group&.name
+    group&.name
   end
 
+  # メンバーに割り当てられた課題の総数をカウント
   def assignments_count
-    object.assignments.count
+    user_assignments.count
+  end
+ 
+  # メンバーが完了した課題の数をカウント
+  def completed_assignments_count
+    user_assignments.completed.count
   end
 
-  def completed_assignments_count
-    object.assignments.where.not(completed_date: nil).count
+  private
+
+  # ユーザーに割り当てられた課題を取得
+  def user_assignments
+    @user_assignments ||= object.assignments
+  end
+
+  def user
+    @user ||= object.user
+  end
+
+  def group
+    @group ||= object.group
   end
 end

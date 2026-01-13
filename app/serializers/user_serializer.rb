@@ -1,29 +1,26 @@
 class UserSerializer < ActiveModel::Serializer
-  attributes :id, :name, :email, :picture, :account_type
+  attributes :id, :name, :email, :picture, :account_type, :groups_count, :active_groups
 
-  # 条件付きでメンバーシップ（グループ参加情報）を取得
+  # メンバーシップ（グループ参加情報）を取得
   has_many :memberships, serializer: MembershipSerializer, if: :include_memberships?
 
-  # カスタム属性
-  # テーブル内に存在しないデータを取得しにいく
-  attribute :groups_count
-  attribute :active_groups
-
-  # アクティブなメンバーの数
-  def groups_count
-    object.memberships.where(active: true).count
+  # アクティブなグループ情報をメモ化
+  def active_groups_data
+    @active_groups_data ||= object.memberships.includes(:group).where(active: true)
   end
 
-  # アクティブなグループの一覧 
+  def groups_count
+    active_groups_data.count
+  end
+
   def active_groups
     return [] unless include_memberships?
-    groups = object.memberships.includes(:group).where(active: true).map(&:group)
-    groups.map { |group| SimpleGroupSerializer.new(group).as_json }
+    active_groups_data.map(&:group)
   end
 
-  # メンバーシップの情報を含めるかどうか判定
+  private
+  # メンバーシップ情報を含めるかどうかの判定
   def include_memberships?
-    # コンテキストで制御
     instance_options[:include_memberships] || false
   end
 end
