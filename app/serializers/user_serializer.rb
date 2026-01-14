@@ -4,7 +4,7 @@ class UserSerializer < ActiveModel::Serializer
   # メンバーシップ（グループ参加情報）を取得
   has_many :memberships, serializer: MembershipSerializer, if: :include_memberships?
 
-  # アクティブなグループ情報をメモ化
+  # アクティブなグループ情報をメモ化(クエリ実行)
   def active_groups_data
     @active_groups_data ||= object.memberships.includes(:group).where(active: true)
   end

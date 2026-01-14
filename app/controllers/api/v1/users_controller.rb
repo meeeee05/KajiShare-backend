@@ -2,12 +2,12 @@ module Api
   module V1
     class UsersController < ApplicationController
       before_action :set_user, only: [:show, :update, :destroy]
-      before_action :authenticate_user!  # 全アクションで認証必須
+      before_action :authenticate_user!, except: [:create]  # createは認証不要（新規登録）
       before_action :check_user_permission, only: [:show, :update, :destroy]  # 自分の情報のみアクセス可能
 
       # GET /api/v1/users - 現在のユーザーの情報のみ返す（セキュリティ向上）
       def index
-        render json: [current_user], each_serializer: UserSerializer
+        render json: current_user, serializer: UserSerializer
       end
 
       # GET /api/v1/users/:id
@@ -17,6 +17,15 @@ module Api
 
       # POST /api/v1/users
       def create
+        # 既存ユーザーの重複チェック
+        if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
+          return handle_unprocessable_entity(["Email already exists"])
+        end
+
+        if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
+          return handle_unprocessable_entity(["Google account already registered"])
+        end
+
         user = User.new(user_params)
         
         if user.save
