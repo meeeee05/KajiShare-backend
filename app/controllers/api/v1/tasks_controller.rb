@@ -23,6 +23,7 @@ module Api
       def create
         task = @group.tasks.new(task_params)
         if task.save
+          Rails.logger.info "Task '#{task.name}' created in Group '#{@group.name}' by user #{current_user.name}"
           render_task_success(task, :created)
         else
           handle_unprocessable_entity(task.errors.full_messages)
@@ -32,6 +33,7 @@ module Api
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要
       def update
         if @task.update(task_params)
+          Rails.logger.info "Task '#{@task.name}' updated in Group '#{@task.group.name}' by user #{current_user.name}"
           render_task_success(@task)
         else
           handle_unprocessable_entity(@task.errors.full_messages)
@@ -56,7 +58,7 @@ module Api
           end
         rescue => e
           Rails.logger.error "Failed to delete task: #{e.message}"
-          handle_unprocessable_entity(["Failed to delete task: #{e.message}"])
+          handle_internal_error(e)
         end
       end
 
@@ -89,7 +91,7 @@ module Api
         render json: task, serializer: TaskSerializer, status: status
       end
 
-      # グループIDを取得するヘルパーメソッド
+      # グループIDを取得するヘルパーメソッド（権限チェック）
       def get_group_id_for_action
         case action_name
         when 'index', 'create'
@@ -110,7 +112,7 @@ module Api
 
       #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        group_id = @task.group_id
+        group_id = get_group_id_for_action
         membership = current_user_membership(group_id)
 
         return handle_forbidden("You are not a member of this group") if membership.nil?

@@ -17,7 +17,7 @@ module Api
 
       # POST /api/v1/users
       def create
-        # 既存ユーザーの重複チェック
+        # 既存ユーザーとの重複チェック
         if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
           return handle_unprocessable_entity(["Email already exists"])
         end
