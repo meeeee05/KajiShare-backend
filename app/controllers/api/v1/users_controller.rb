@@ -29,6 +29,7 @@ module Api
         user = User.new(user_params)
         
         if user.save
+          Rails.logger.info "User '#{user.name}' (ID: #{user.id}, Email: #{user.email}) created successfully"
           render_user_success(user, :created)
         else
           handle_unprocessable_entity(user.errors.full_messages)
@@ -38,6 +39,7 @@ module Api
       # PATCH/PUT /api/v1/users/:id
       def update
         if @user.update(user_params)
+          Rails.logger.info "User '#{@user.name}' (ID: #{@user.id}, Email: #{@user.email}) updated successfully by user #{current_user.name}"
           render_user_success(@user)
         else
           handle_unprocessable_entity(@user.errors.full_messages)
