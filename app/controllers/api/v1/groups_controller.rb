@@ -1,6 +1,5 @@
 class Api::V1::GroupsController < ApplicationController
   before_action :set_group, only: [:show, :update, :destroy]
-  # ログインしているかどうか
   before_action :authenticate_user!  # 全アクションで認証必須
   before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
   before_action :check_admin_permission, only: [:update, :destroy]
@@ -97,23 +96,27 @@ class Api::V1::GroupsController < ApplicationController
     render json: group, serializer: GroupSerializer, status: status
   end
 
+  # nilの場合や非アクティブの場合に403エラー
+  def validate_membership(membership)
+    return handle_forbidden("You are not a member of this group") if membership.nil?
+    return handle_forbidden("Your membership is not active") unless membership.active?
+    membership
+  end
+
   # 権限チェック：指定されたグループのmember以上のみ操作可能
   def check_member_permission
     # indexアクションの場合は特別処理不要
     return if action_name == 'index'
     
     membership = current_user_membership(@group.id)
-
-    return handle_forbidden("You are not a member of this group") if membership.nil?
-    return handle_forbidden("Your membership is not active") unless membership.active?
+    validate_membership(membership)
   end
 
   # 権限チェック：Adminのみがグループの更新・削除を実行可能
   def check_admin_permission
     membership = current_user_membership(@group.id)
-
-    return handle_forbidden("You are not a member of this group") if membership.nil?
-    return handle_forbidden("Your membership is not active") unless membership.active?
+    validate_membership(membership)
+    
     return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
   end
 end
