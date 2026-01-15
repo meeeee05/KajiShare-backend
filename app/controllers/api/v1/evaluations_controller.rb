@@ -9,7 +9,10 @@ module Api
 
       # GET /api/v1/evaluations
       def index
-        evaluations = Evaluation.all
+        # 現在のユーザーが参加しているグループの評価のみ取得
+        user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
+        evaluations = Evaluation.joins(assignment: { task: :group })
+                               .where(tasks: { group_id: user_group_ids })
         render json: evaluations, each_serializer: EvaluationSerializer
       end
 
@@ -24,6 +27,7 @@ module Api
           evaluation = Evaluation.new(evaluation_params)
 
           if evaluation.save
+            Rails.logger.info "Evaluation created: (ID: #{evaluation.id}) for Assignment #{evaluation.assignment_id} by user #{current_user.name}"
             render_evaluation_success(evaluation, :created)
           else
             handle_unprocessable_entity(evaluation.errors.full_messages)
@@ -37,6 +41,7 @@ module Api
       def update
         begin
           if @evaluation.update(evaluation_params)
+            Rails.logger.info "Evaluation updated: (ID: #{@evaluation.id}) for Assignment #{@evaluation.assignment_id} by user #{current_user.name}"
             render_evaluation_success(@evaluation)
           else
             handle_unprocessable_entity(@evaluation.errors.full_messages)
@@ -64,7 +69,7 @@ module Api
           end
         rescue => e
           Rails.logger.error "Failed to delete evaluation: #{e.message}"
-          handle_unprocessable_entity(["Failed to delete evaluation: #{e.message}"])
+          handle_internal_error(e)
         end
       end
 
@@ -83,23 +88,33 @@ module Api
         params.require(:evaluation).permit(:assignment_id, :evaluator_id, :score, :feedback)
       end
 
+      # 現在のユーザーのメンバーシップ取得
+      def current_user_membership(group_id)
+        Membership.find_by(user_id: current_user.id, group_id: group_id)
+      end
+
+      # nilの場合や非アクティブの場合に403エラー
+      def validate_membership(membership)
+        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("Your membership is not active") unless membership.active?
+        membership
+      end
+
       # Member権限チェック：指定されたグループのmember以上の権限のみ操作可能
       def check_member_permission
         group_id = get_group_id_for_action
-        return if group_id.nil? # indexアクションは後で改修予定
+        return if group_id.nil? # indexアクションは既にフィルタリング済み
         
         membership = current_user_membership(group_id)
-        
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
+        validate_membership(membership)
       end
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
         group_id = @evaluation.assignment.task.group_id
         membership = current_user_membership(group_id)
+        validate_membership(membership)
 
-        return handle_forbidden("You are not a member of this group") if membership.nil?
         return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
 
@@ -107,18 +122,14 @@ module Api
       def get_group_id_for_action
         case action_name
         when 'index'
-          nil  # 全評価一覧は後で改修予定
+          # indexアクションでは権限チェックは行わない（既にフィルタリング済み）
+          nil
         when 'create'
           assignment = Assignment.find(evaluation_params[:assignment_id])
           assignment.task.group_id
         when 'show', 'update'
           @evaluation.assignment.task.group_id
         end
-      end
-
-      # 現在のユーザーのメンバーシップ取得
-      def current_user_membership(group_id)
-        Membership.find_by(user_id: current_user.id, group_id: group_id)
       end
 
       # 共通メソッド：評価情報のJSONレスポンスを生成
