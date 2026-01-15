@@ -4,7 +4,6 @@ module Api
     class AssignmentsController < ApplicationController
       before_action :set_task, only: [:index, :create]
       before_action :set_assignment, only: [:show, :update, :destroy]
-      # ログイン済みか確認　→ ログインしていない場合はログイン画面へリダイレクト
       before_action :authenticate_user!  
       # 参照・作成・更新はMember権限以上
       before_action :check_member_permission, only: [:index, :show, :create, :update]  
@@ -36,6 +35,7 @@ module Api
         assignment.membership_id = membership.id if membership
 
         if assignment.save
+          Rails.logger.info "Assignment created: (ID: #{assignment.id}) for Task '#{@task.name}' by user #{current_user.name}"
           render_assignment_success(assignment, :created)
         else
           handle_unprocessable_entity(assignment.errors.full_messages)
@@ -46,6 +46,7 @@ module Api
       def update
         begin
           if @assignment.update(assignment_params)
+            Rails.logger.info "Assignment updated: (ID: #{@assignment.id}) for Task '#{@assignment.task.name}' by user #{current_user.name}"
             render_assignment_success(@assignment)
           else
             handle_unprocessable_entity(@assignment.errors.full_messages)
@@ -73,7 +74,7 @@ module Api
           end
         rescue => e
           Rails.logger.error "Failed to delete assignment: #{e.message}"
-          handle_unprocessable_entity(["Failed to delete assignment: #{e.message}"])
+          handle_internal_error(e)
         end
       end
 
@@ -102,21 +103,31 @@ module Api
             )
         end
         
+      # 現在のユーザーのメンバーシップ取得
+      def current_user_membership(group_id)
+        Membership.find_by(user_id: current_user.id, group_id: group_id)
+      end
+
+      # nilの場合や非アクティブの場合に403エラー
+      def validate_membership(membership)
+        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("Your membership is not active") unless membership.active?
+        membership
+      end
+
       # 権限チェック：指定されたグループのmember以上の権限のみ操作可能
       def check_member_permission
         group_id = get_group_id_for_action
         membership = current_user_membership(group_id)
-        
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
+        validate_membership(membership)
       end
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
         group_id = @assignment.task.group_id
         membership = current_user_membership(group_id)
+        validate_membership(membership)
 
-        return handle_forbidden("You are not a member of this group") if membership.nil?
         return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
 
@@ -128,11 +139,6 @@ module Api
         when 'show', 'update'
           @assignment.task.group_id
         end
-      end
-
-      # 現在のユーザーのメンバーシップ取得
-      def current_user_membership(group_id)
-        Membership.find_by(user_id: current_user.id, group_id: group_id)
       end
 
       # 共通メソッド：アサインメント情報のJSONレスポンスを生成

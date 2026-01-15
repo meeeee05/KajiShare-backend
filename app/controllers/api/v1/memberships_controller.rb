@@ -106,7 +106,7 @@ module Api
         Membership.find_by(user_id: current_user.id, group_id: group_id)
       end
 
-      # メンバーシップの基本チェック（存在とアクティブ状態）
+      # nilの場合や非アクティブの場合に403エラー
       def validate_membership!(membership)
         return handle_forbidden("You are not a member of this group") if membership.nil?
         return handle_forbidden("Your membership is not active") unless membership.active?
