@@ -18,7 +18,7 @@ class Api::V1::GroupsController < ApplicationController
     render_group_success(@group)
   end
 
-  # POST /api/v1/groups - グループメンバーの登録
+  # POST /api/v1/groups - グループ作成
   def create
     group = Group.new(group_params)
 
@@ -30,6 +30,7 @@ class Api::V1::GroupsController < ApplicationController
           role: "admin",
           active: true
         )
+        Rails.logger.info "Group created: '#{group.name}' (ID: #{group.id}) by user #{current_user.name}"
         render_group_success(group, :created)
       else
         handle_unprocessable_entity(group.errors.full_messages)
@@ -43,6 +44,7 @@ class Api::V1::GroupsController < ApplicationController
   # PATCH/PUT /api/v1/groups/:id - グループ情報編集（Admin権限が必要）
   def update
     if @group.update(group_params)
+      Rails.logger.info "Group updated: '#{@group.name}' (ID: #{@group.id}) by admin #{current_user.name}"
       render_group_success(@group)
     else
       handle_unprocessable_entity(@group.errors.full_messages)
@@ -111,6 +113,7 @@ class Api::V1::GroupsController < ApplicationController
     membership = current_user_membership(@group.id)
 
     return handle_forbidden("You are not a member of this group") if membership.nil?
+    return handle_forbidden("Your membership is not active") unless membership.active?
     return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
   end
 end
