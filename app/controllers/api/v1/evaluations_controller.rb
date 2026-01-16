@@ -122,7 +122,7 @@ module Api
       def get_group_id_for_action
         case action_name
         when 'index'
-          # indexアクションでは権限チェックは行わない（既にフィルタリング済み）
+          # indexアクションでは権限チェックは行わない
           nil
         when 'create'
           assignment = Assignment.find(evaluation_params[:assignment_id])
