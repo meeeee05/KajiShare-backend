@@ -17,32 +17,40 @@ module Api
 
       # POST /api/v1/users
       def create
-        # 既存ユーザーとの重複チェック
-        if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
-          return handle_unprocessable_entity(["Email already exists"])
-        end
+        begin
+          # 既存ユーザーとの重複チェック
+          if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
+            return handle_unprocessable_entity(["Email already exists"])
+          end
 
-        if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
-          return handle_unprocessable_entity(["Google account already registered"])
-        end
+          if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
+            return handle_unprocessable_entity(["Google account already registered"])
+          end
 
-        user = User.new(user_params)
-        
-        if user.save
-          Rails.logger.info "User '#{user.name}' (ID: #{user.id}, Email: #{user.email}) created successfully"
-          render_user_success(user, :created)
-        else
-          handle_unprocessable_entity(user.errors.full_messages)
+          user = User.new(user_params)
+          
+          if user.save
+            Rails.logger.info "User created: '#{user.name}' (ID: #{user.id}, Email: #{user.email})"
+            render_user_success(user, :created)
+          else
+            handle_unprocessable_entity(user.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to create user: #{e.message}")
         end
       end
 
       # PATCH/PUT /api/v1/users/:id
       def update
-        if @user.update(user_params)
-          Rails.logger.info "User '#{@user.name}' (ID: #{@user.id}, Email: #{@user.email}) updated successfully by user #{current_user.name}"
-          render_user_success(@user)
-        else
-          handle_unprocessable_entity(@user.errors.full_messages)
+        begin
+          if @user.update(user_params)
+            Rails.logger.info "User updated: '#{@user.name}' (ID: #{@user.id}, Email: #{@user.email}) by user #{current_user.name}"
+            render_user_success(@user)
+          else
+            handle_unprocessable_entity(@user.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to update user: #{e.message}")
         end
       end
 
