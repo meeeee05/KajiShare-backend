@@ -24,7 +24,7 @@ module Api
         begin
           assignment = @task.assignments.build(assignment_params)
           
-          # 現在のユーザーのmembership_idを自動設定
+          # 現在のユーザーのmembership_idを設定
           membership = get_current_user_membership(@task.group_id)
           assignment.membership_id = membership.id if membership
 
@@ -75,13 +75,13 @@ module Api
 
       def set_task
         @task = Task.find(params[:task_id])
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         handle_not_found("Task with ID #{params[:task_id]} not found")
       end
 
       def set_assignment
         @assignment = Assignment.find(params[:id])
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         handle_not_found("Assignment with ID #{params[:id]} not found")
       end
       
