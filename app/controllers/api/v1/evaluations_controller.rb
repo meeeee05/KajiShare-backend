@@ -117,8 +117,6 @@ module Api
         if required_role == 'admin' && !membership.admin?
           return handle_forbidden("You are not allowed to perform this action. Admin permission required.")
         end
-        
-        membership
       end
 
       # 共通メソッド：評価情報のJSONレスポンスを生成
