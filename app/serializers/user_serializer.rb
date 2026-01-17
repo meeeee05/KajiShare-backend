@@ -18,7 +18,6 @@ class UserSerializer < ActiveModel::Serializer
     active_groups_data.map(&:group)
   end
 
-  private
   # メンバーシップ情報を含めるかどうかの判定
   def include_memberships?
     instance_options[:include_memberships] || false

@@ -1,11 +1,9 @@
 module Api
   module V1
     class EvaluationsController < ApplicationController
-      #レコード個別取得
+      before_action :authenticate_user!
       before_action :set_evaluation, only: [:show, :update, :destroy]
-      before_action :authenticate_user!  # ログイン済みかどうか
-      before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
-      before_action :check_admin_permission, only: [:destroy]  # 削除はAdmin権限のみ
+      before_action :validate_permission
 
       # GET /api/v1/evaluations
       def index
@@ -25,6 +23,8 @@ module Api
       def create
         begin
           evaluation = Evaluation.new(evaluation_params)
+          # 現在のユーザーを評価者として設定
+          evaluation.evaluator_id = current_user.id  
 
           if evaluation.save
             Rails.logger.info "Evaluation created: (ID: #{evaluation.id}) for Assignment #{evaluation.assignment_id} by user #{current_user.name}"
@@ -54,12 +54,9 @@ module Api
       # DELETE /api/v1/evaluations/:id - Admin権限が必要
       def destroy
         begin
-          #トランザクション内で安全に削除
           ActiveRecord::Base.transaction do
-            # 削除ログ記録
             Rails.logger.info "Deleting evaluation (ID: #{@evaluation.id}) for Assignment #{@evaluation.assignment_id} by admin user #{current_user.name}"
             
-            #評価を削除
             @evaluation.destroy!
             
             render json: { 
@@ -67,9 +64,8 @@ module Api
               deleted_at: Time.current 
             }, status: :ok
           end
-        rescue => e
-          Rails.logger.error "Failed to delete evaluation: #{e.message}"
-          handle_internal_error(e)
+        rescue StandardError => e
+          handle_internal_error("Failed to delete evaluation: #{e.message}")
         end
       end
 
@@ -78,58 +74,51 @@ module Api
       # 該当IDのレコードをDBから取得
       def set_evaluation
         @evaluation = Evaluation.find(params[:id])
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         handle_not_found("Evaluation with ID #{params[:id]} not found")
       end
 
-      #以下4つだけを取り出す、悪意あるデータは除外（改ざんやなりすましを防ぐ）
-      #assignment_id, evaluator_id, score, feedback
+      # 以下カラムのみ表示・更新を許可
       def evaluation_params
-        params.require(:evaluation).permit(:assignment_id, :evaluator_id, :score, :feedback)
+        params.require(:evaluation).permit(:assignment_id, :score, :feedback)
       end
 
-      # 現在のユーザーのメンバーシップ取得
-      def current_user_membership(group_id)
-        Membership.find_by(user_id: current_user.id, group_id: group_id)
-      end
-
-      # nilの場合や非アクティブの場合に403エラー
-      def validate_membership(membership)
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
-        membership
-      end
-
-      # Member権限チェック：指定されたグループのmember以上の権限のみ操作可能
-      def check_member_permission
-        group_id = get_group_id_for_action
-        return if group_id.nil? # indexアクションは既にフィルタリング済み
+      # 権限チェック
+      def validate_permission
+        # indexアクションは結果フィルタリングで安全性を確保するため、権限チェック不要
+        return if action_name == 'index'
         
-        membership = current_user_membership(group_id)
-        validate_membership(membership)
-      end
-
-      # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
-      def check_admin_permission
-        group_id = @evaluation.assignment.task.group_id
-        membership = current_user_membership(group_id)
-        validate_membership(membership)
-
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
-      end
-
-      # 権限チェックのためアクション別のgroup_id取得
-      def get_group_id_for_action
         case action_name
-        when 'index'
-          # indexアクションでは権限チェックは行わない
-          nil
         when 'create'
           assignment = Assignment.find(evaluation_params[:assignment_id])
-          assignment.task.group_id
+          group_id = assignment.task.group_id
+          required_role = 'member'
         when 'show', 'update'
-          @evaluation.assignment.task.group_id
+          group_id = @evaluation.assignment.task.group_id
+          required_role = 'member'
+        when 'destroy'
+          group_id = @evaluation.assignment.task.group_id
+          required_role = 'admin'
         end
+
+        membership = get_current_user_membership(group_id)
+        validate_membership(membership, required_role)
+      end
+
+      # 権限取得とエラーハンドリング
+      def get_current_user_membership(group_id)
+        current_user.memberships.find_by(group_id: group_id, active: true)
+      end
+
+      # 権限検証
+      def validate_membership(membership, required_role = 'member')
+        return handle_forbidden("You are not a member of this group") if membership.nil?
+        
+        if required_role == 'admin' && !membership.admin?
+          return handle_forbidden("You are not allowed to perform this action. Admin permission required.")
+        end
+        
+        membership
       end
 
       # 共通メソッド：評価情報のJSONレスポンスを生成

@@ -37,16 +37,20 @@ class Api::V1::GroupsController < ApplicationController
     end
   rescue => e
     Rails.logger.error "Group creation failed: #{e.message}"
-    handle_unprocessable_entity(["Failed to create group: #{e.message}"])
+    handle_internal_error("Failed to create group: #{e.message}")
   end
 
   # PATCH/PUT /api/v1/groups/:id - グループ情報編集（Admin権限が必要）
   def update
-    if @group.update(group_params)
-      Rails.logger.info "Group updated: '#{@group.name}' (ID: #{@group.id}) by admin #{current_user.name}"
-      render_group_success(@group)
-    else
-      handle_unprocessable_entity(@group.errors.full_messages)
+    begin
+      if @group.update(group_params)
+        Rails.logger.info "Group updated: '#{@group.name}' (ID: #{@group.id}) by admin #{current_user.name}"
+        render_group_success(@group)
+      else
+        handle_unprocessable_entity(@group.errors.full_messages)
+      end
+    rescue StandardError => e
+      handle_internal_error("Failed to update group: #{e.message}")
     end
   end
 
@@ -68,7 +72,7 @@ class Api::V1::GroupsController < ApplicationController
       end
     rescue => e
       Rails.logger.error "Failed to delete group: #{e.message}"
-      handle_unprocessable_entity(["Failed to delete group: #{e.message}"])
+      handle_internal_error("Failed to delete group: #{e.message}")
     end
   end
 
