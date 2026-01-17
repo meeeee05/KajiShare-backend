@@ -21,22 +21,30 @@ module Api
 
       # POST /api/v1/groups/:group_id/tasks - Member権限以上が必要
       def create
-        task = @group.tasks.new(task_params)
-        if task.save
-          Rails.logger.info "Task '#{task.name}' created in Group '#{@group.name}' by user #{current_user.name}"
-          render_task_success(task, :created)
-        else
-          handle_unprocessable_entity(task.errors.full_messages)
+        begin
+          task = @group.tasks.new(task_params)
+          if task.save
+            Rails.logger.info "Task created: '#{task.name}' in Group '#{@group.name}' by user #{current_user.name}"
+            render_task_success(task, :created)
+          else
+            handle_unprocessable_entity(task.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to create task: #{e.message}")
         end
       end
 
       # PUT/PATCH /api/v1/tasks/:id - Member権限以上が必要
       def update
-        if @task.update(task_params)
-          Rails.logger.info "Task '#{@task.name}' updated in Group '#{@task.group.name}' by user #{current_user.name}"
-          render_task_success(@task)
-        else
-          handle_unprocessable_entity(@task.errors.full_messages)
+        begin
+          if @task.update(task_params)
+            Rails.logger.info "Task updated: '#{@task.name}' in Group '#{@task.group.name}' by user #{current_user.name}"
+            render_task_success(@task)
+          else
+            handle_unprocessable_entity(@task.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to update task: #{e.message}")
         end
       end
 
@@ -58,7 +66,7 @@ module Api
           end
         rescue => e
           Rails.logger.error "Failed to delete task: #{e.message}"
-          handle_internal_error(e)
+          handle_internal_error("Failed to delete task: #{e.message}")
         end
       end
 
@@ -103,20 +111,29 @@ module Api
 
       #Member権限チェック：指定されたグループのmember権限以上のみ操作可能
       def check_member_permission
-        group_id = get_group_id_for_action
-        membership = current_user_membership(group_id)
-
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
+        membership = get_current_user_membership_for_action
+        validate_membership(membership)
       end
 
       #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        group_id = get_group_id_for_action
-        membership = current_user_membership(group_id)
+        membership = get_current_user_membership_for_action
+        validate_membership(membership)
 
-        return handle_forbidden("You are not a member of this group") if membership.nil?
         return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+      end
+
+      # アクションに応じた現在のユーザーのメンバーシップを取得
+      def get_current_user_membership_for_action
+        group_id = get_group_id_for_action
+        current_user_membership(group_id)
+      end
+
+      # nilの場合や非アクティブの場合に403エラー
+      def validate_membership(membership)
+        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("Your membership is not active") unless membership.active?
+        membership
       end
     end
   end

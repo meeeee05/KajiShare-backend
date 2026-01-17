@@ -19,13 +19,7 @@ module Api
       def create
         begin
           # 既存ユーザーとの重複チェック
-          if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
-            return handle_unprocessable_entity(["Email already exists"])
-          end
-
-          if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
-            return handle_unprocessable_entity(["Google account already registered"])
-          end
+          return if check_user_duplicates
 
           user = User.new(user_params)
           
@@ -75,7 +69,7 @@ module Api
           end
         rescue => e
           Rails.logger.error "Failed to delete user: #{e.message}"
-          handle_unprocessable_entity(["Failed to delete user: #{e.message}"])
+          handle_internal_error("Failed to delete user: #{e.message}")
         end
       end
 
@@ -101,6 +95,21 @@ module Api
       # ユーザー権限チェック：自分の情報のみアクセス可能
       def check_user_permission
         return handle_forbidden("You can only access your own user information") unless @user.id == current_user.id
+      end
+
+      # 重複チェック：既存ユーザーとの重複を確認
+      def check_user_duplicates
+        if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
+          handle_unprocessable_entity(["Email already exists"])
+          return true
+        end
+
+        if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
+          handle_unprocessable_entity(["Google account already registered"])
+          return true
+        end
+
+        false
       end
     end
   end

@@ -26,22 +26,30 @@ module Api
 
       # POST /api/v1/memberships - Admin権限で新規メンバーシップ作成
       def create
-        membership = Membership.new(membership_params)
-        if membership.save
-          Rails.logger.info "Membership created: User #{membership.user.name} joined Group #{membership.group.name} as #{membership.role} by admin #{current_user.name}"
-          render_membership_success(membership, :created)
-        else
-          handle_unprocessable_entity(membership.errors.full_messages)
+        begin
+          membership = Membership.new(membership_params)
+          if membership.save
+            Rails.logger.info "Membership created: User #{membership.user.name} joined Group #{membership.group.name} as #{membership.role} by admin #{current_user.name}"
+            render_membership_success(membership, :created)
+          else
+            handle_unprocessable_entity(membership.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to create membership: #{e.message}")
         end
       end
 
       # PUT /api/v1/memberships/:id - Admin権限でメンバーシップ更新（roleは専用エンドポイントで変更）
       def update
-        if @membership.update(membership_params)
-          Rails.logger.info "Membership updated: User #{@membership.user.name} in Group #{@membership.group.name} by admin #{current_user.name}"
-          render_membership_success(@membership)
-        else
-          handle_unprocessable_entity(@membership.errors.full_messages)
+        begin
+          if @membership.update(membership_params)
+            Rails.logger.info "Membership updated: User #{@membership.user.name} in Group #{@membership.group.name} by admin #{current_user.name}"
+            render_membership_success(@membership)
+          else
+            handle_unprocessable_entity(@membership.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to update membership: #{e.message}")
         end
       end
 
@@ -60,30 +68,34 @@ module Api
       # PATCH /api/v1/memberships/:id/change_role - Admin権限でロール変更専用エンドポイント
       # AdminからMemberへの変更時に、最後のAdminではないかを確認
       def change_role
-        new_role = params[:role]
-        
-        unless ['admin', 'member'].include?(new_role)
-          return handle_unprocessable_entity(["Invalid role. Must be 'admin' or 'member'"])
-        end
+        begin
+          new_role = params[:role]
+          
+          unless ['admin', 'member'].include?(new_role)
+            return handle_unprocessable_entity(["Invalid role. Must be 'admin' or 'member'"])
+          end
 
-        # 現在のロール（権限）と同じ場合は何もしない
-        if @membership.role == new_role
-          return render json: { message: "Role is already #{new_role}" }, status: :ok
-        end
+          # 現在のロール（権限）と同じ場合は何もしない
+          if @membership.role == new_role
+            return render json: { message: "Role is already #{new_role}" }, status: :ok
+          end
 
-        # AdminからMemberに変更する場合の制限チェック
-        if @membership.admin? && new_role == "member"
-          return unless ensure_not_last_admin(@membership, "demote the last admin")
-        end
+          # AdminからMemberに変更する場合の制限チェック
+          if @membership.admin? && new_role == "member"
+            return unless ensure_not_last_admin(@membership, "demote the last admin")
+          end
 
-        # ロール変更実行
-        if @membership.update(role: new_role)
-          Rails.logger.info "Role changed: User #{@membership.user.name} in Group #{@membership.group.name} from #{@membership.role_was} to #{new_role} by admin #{current_user.name}"
-          render json: { 
-            message: "Role successfully changed to #{new_role}"
-          }, status: :ok
-        else
-          handle_unprocessable_entity(@membership.errors.full_messages)
+          # ロール変更実行
+          if @membership.update(role: new_role)
+            Rails.logger.info "Role changed: User #{@membership.user.name} in Group #{@membership.group.name} from #{@membership.role_was} to #{new_role} by admin #{current_user.name}"
+            render json: { 
+              message: "Role successfully changed to #{new_role}"
+            }, status: :ok
+          else
+            handle_unprocessable_entity(@membership.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to change role: #{e.message}")
         end
       end
 
@@ -107,7 +119,7 @@ module Api
       end
 
       # nilの場合や非アクティブの場合に403エラー
-      def validate_membership!(membership)
+      def validate_membership(membership)
         return handle_forbidden("You are not a member of this group") if membership.nil?
         return handle_forbidden("Your membership is not active") unless membership.active?
         membership
@@ -120,16 +132,16 @@ module Api
         
         group_id = get_group_id_for_action
         membership = current_user_membership(group_id)
-        validate_membership!(membership)
+        validate_membership(membership)
       end
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
         group_id = get_group_id_for_action
-        return handle_bad_request("Group ID is required") if group_id.nil?
+        return handle_unprocessable_entity(["Group ID is required"]) if group_id.nil?
         
         membership = current_user_membership(group_id)
-        validate_membership!(membership)
+        validate_membership(membership)
         
         return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
