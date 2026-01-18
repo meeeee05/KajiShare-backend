@@ -88,17 +88,14 @@ module Api
         # indexアクションは結果フィルタリングで安全性を確保するため、権限チェック不要
         return if action_name == 'index'
         
-        case action_name
+        group_id, required_role = case action_name
         when 'create'
           assignment = Assignment.find(evaluation_params[:assignment_id])
-          group_id = assignment.task.group_id
-          required_role = 'member'
+          [assignment.task.group_id, 'member']
         when 'show', 'update'
-          group_id = @evaluation.assignment.task.group_id
-          required_role = 'member'
+          [@evaluation.assignment.task.group_id, 'member']
         when 'destroy'
-          group_id = @evaluation.assignment.task.group_id
-          required_role = 'admin'
+          [@evaluation.assignment.task.group_id, 'admin']
         end
 
         membership = get_current_user_membership(group_id)

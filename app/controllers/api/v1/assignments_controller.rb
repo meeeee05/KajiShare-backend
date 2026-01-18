@@ -92,16 +92,13 @@ module Api
       
       # 権限チェック
       def validate_permission
-        case action_name
+        group_id, required_role = case action_name
         when 'index', 'create'
-          group_id = @task.group_id
-          required_role = 'member'
+          [@task.group_id, 'member']
         when 'show', 'update'
-          group_id = @assignment.task.group_id
-          required_role = 'member'
+          [@assignment.task.group_id, 'member']
         when 'destroy'
-          group_id = @assignment.task.group_id
-          required_role = 'admin'
+          [@assignment.task.group_id, 'admin']
         end
 
         membership = get_current_user_membership(group_id)
