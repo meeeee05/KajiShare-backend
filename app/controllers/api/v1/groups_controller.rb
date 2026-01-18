@@ -112,15 +112,19 @@ class Api::V1::GroupsController < ApplicationController
     # indexアクションの場合は特別処理不要
     return if action_name == 'index'
     
-    membership = current_user_membership(@group.id)
-    validate_membership(membership)
+    validate_group_membership
   end
 
   # 権限チェック：Adminのみがグループの更新・削除を実行可能
   def check_admin_permission
-    membership = current_user_membership(@group.id)
-    validate_membership(membership)
+    membership = validate_group_membership
     
     return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+  end
+
+  # 共通メソッド：グループのメンバーシップ検証
+  def validate_group_membership
+    membership = current_user_membership(@group.id)
+    validate_membership(membership)
   end
 end

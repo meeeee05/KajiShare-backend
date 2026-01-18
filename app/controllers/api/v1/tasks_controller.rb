@@ -111,22 +111,21 @@ module Api
 
       #Member権限チェック：指定されたグループのmember権限以上のみ操作可能
       def check_member_permission
-        membership = get_current_user_membership_for_action
-        validate_membership(membership)
+        validate_group_membership_for_action
       end
 
       #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
-        membership = get_current_user_membership_for_action
-        validate_membership(membership)
+        membership = validate_group_membership_for_action
 
         return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
       end
 
-      # アクションに応じた現在のユーザーのメンバーシップを取得
-      def get_current_user_membership_for_action
+      # アクションに応じた権限の検証
+      def validate_group_membership_for_action
         group_id = get_group_id_for_action
-        current_user_membership(group_id)
+        membership = current_user_membership(group_id)
+        validate_membership(membership)
       end
 
       # nilの場合や非アクティブの場合に403エラー

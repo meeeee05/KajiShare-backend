@@ -67,7 +67,7 @@ module Api
               deleted_at: Time.current
             }, status: :ok
           end
-        rescue => e
+        rescue StandardError => e
           Rails.logger.error "Failed to delete user: #{e.message}"
           handle_internal_error("Failed to delete user: #{e.message}")
         end
