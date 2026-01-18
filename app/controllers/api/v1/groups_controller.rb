@@ -35,7 +35,7 @@ class Api::V1::GroupsController < ApplicationController
         handle_unprocessable_entity(group.errors.full_messages)
       end
     end
-  rescue => e
+  rescue StandardError => e
     Rails.logger.error "Group creation failed: #{e.message}"
     handle_internal_error("Failed to create group: #{e.message}")
   end
@@ -70,7 +70,7 @@ class Api::V1::GroupsController < ApplicationController
           deleted_at: Time.current 
         }, status: :ok
       end
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "Failed to delete group: #{e.message}"
       handle_internal_error("Failed to delete group: #{e.message}")
     end
@@ -81,7 +81,7 @@ class Api::V1::GroupsController < ApplicationController
   # group存在チェック
   def set_group
     @group = Group.find(params[:id])
-  rescue ActiveRecord::RecordNotFound => e
+  rescue ActiveRecord::RecordNotFound
     handle_not_found("Group with ID #{params[:id]} not found")
   end
 

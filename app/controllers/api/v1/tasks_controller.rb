@@ -74,13 +74,13 @@ module Api
 
       def set_group
         @group = Group.find(params[:group_id])
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         handle_not_found("Group with ID #{params[:group_id]} not found")
       end
 
       def set_task
         @task = Task.find(params[:id])
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         handle_not_found("Task with ID #{params[:id]} not found")
       end
 

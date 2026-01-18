@@ -103,7 +103,7 @@ module Api
 
       def set_membership
         @membership = Membership.find(params[:id])
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         handle_not_found("Membership with ID #{params[:id]} not found")
       end
 
