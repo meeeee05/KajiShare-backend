@@ -1,6 +1,5 @@
 class Api::V1::GroupsController < ApplicationController
   before_action :set_group, only: [:show, :update, :destroy]
-  # ログインしているかどうか
   before_action :authenticate_user!  # 全アクションで認証必須
   before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
   before_action :check_admin_permission, only: [:update, :destroy]
@@ -18,7 +17,7 @@ class Api::V1::GroupsController < ApplicationController
     render_group_success(@group)
   end
 
-  # POST /api/v1/groups - グループメンバーの登録
+  # POST /api/v1/groups - グループ作成
   def create
     group = Group.new(group_params)
 
@@ -30,22 +29,28 @@ class Api::V1::GroupsController < ApplicationController
           role: "admin",
           active: true
         )
+        Rails.logger.info "Group created: '#{group.name}' (ID: #{group.id}) by user #{current_user.name}"
         render_group_success(group, :created)
       else
         handle_unprocessable_entity(group.errors.full_messages)
       end
     end
-  rescue => e
+  rescue StandardError => e
     Rails.logger.error "Group creation failed: #{e.message}"
-    handle_unprocessable_entity(["Failed to create group: #{e.message}"])
+    handle_internal_error("Failed to create group: #{e.message}")
   end
 
   # PATCH/PUT /api/v1/groups/:id - グループ情報編集（Admin権限が必要）
   def update
-    if @group.update(group_params)
-      render_group_success(@group)
-    else
-      handle_unprocessable_entity(@group.errors.full_messages)
+    begin
+      if @group.update(group_params)
+        Rails.logger.info "Group updated: '#{@group.name}' (ID: #{@group.id}) by admin #{current_user.name}"
+        render_group_success(@group)
+      else
+        handle_unprocessable_entity(@group.errors.full_messages)
+      end
+    rescue StandardError => e
+      handle_internal_error("Failed to update group: #{e.message}")
     end
   end
 
@@ -65,9 +70,9 @@ class Api::V1::GroupsController < ApplicationController
           deleted_at: Time.current 
         }, status: :ok
       end
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "Failed to delete group: #{e.message}"
-      handle_unprocessable_entity(["Failed to delete group: #{e.message}"])
+      handle_internal_error("Failed to delete group: #{e.message}")
     end
   end
 
@@ -76,7 +81,7 @@ class Api::V1::GroupsController < ApplicationController
   # group存在チェック
   def set_group
     @group = Group.find(params[:id])
-  rescue ActiveRecord::RecordNotFound => e
+  rescue ActiveRecord::RecordNotFound
     handle_not_found("Group with ID #{params[:id]} not found")
   end
 
@@ -95,22 +100,31 @@ class Api::V1::GroupsController < ApplicationController
     render json: group, serializer: GroupSerializer, status: status
   end
 
+  # nilの場合や非アクティブの場合に403エラー
+  def validate_membership(membership)
+    return handle_forbidden("You are not a member of this group") if membership.nil?
+    return handle_forbidden("Your membership is not active") unless membership.active?
+    membership
+  end
+
   # 権限チェック：指定されたグループのmember以上のみ操作可能
   def check_member_permission
     # indexアクションの場合は特別処理不要
     return if action_name == 'index'
     
-    membership = current_user_membership(@group.id)
-
-    return handle_forbidden("You are not a member of this group") if membership.nil?
-    return handle_forbidden("Your membership is not active") unless membership.active?
+    validate_group_membership
   end
 
   # 権限チェック：Adminのみがグループの更新・削除を実行可能
   def check_admin_permission
-    membership = current_user_membership(@group.id)
-
-    return handle_forbidden("You are not a member of this group") if membership.nil?
+    membership = validate_group_membership
+    
     return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+  end
+
+  # 共通メソッド：グループのメンバーシップ検証
+  def validate_group_membership
+    membership = current_user_membership(@group.id)
+    validate_membership(membership)
   end
 end

@@ -1,12 +1,11 @@
 class ApplicationController < ActionController::API
-  
   # 例外ハンドリングをキャッチ
-  #予期しないエラー、DB接続エラーなどは500で返す
+  # 予期しないエラー、DB接続エラーなどは500で返す
   rescue_from StandardError, with: :handle_internal_error
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found  #404 レコード未発見
   rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing  #400 パラメータ不足
   
-  #test用エンドポイント
+  # test用エンドポイント
   def test
     render json: { 
       message: "KajiShare API is working!", 
@@ -18,7 +17,7 @@ class ApplicationController < ActionController::API
   # DB接続状況をJSON形式で確認
   def database_status
     begin
-      #実際にクエリを実行して接続確認
+      # 実際にクエリを実行して接続確認
       User.connection.execute("SELECT 1")
       "connected"
     rescue
@@ -138,13 +137,24 @@ class ApplicationController < ActionController::API
   end
 
   # 500: Internal Server Error
-  def handle_internal_error(exception)
-    Rails.logger.error "Internal Server Error: #{exception.message}"
-    Rails.logger.error exception.backtrace.join("\n")
+  def handle_internal_error(exception_or_message)
+    case exception_or_message
+    # 引数が文字列の場合
+    when String
+      message = exception_or_message
+      Rails.logger.error "Internal Server Error: #{message}"
+    when Exception
+      message = exception_or_message.message
+      Rails.logger.error "Internal Server Error: #{message}"
+      Rails.logger.error exception_or_message.backtrace.join("\n")
+    else
+      message = "Something went wrong"
+      Rails.logger.error "Internal Server Error: #{message}"
+    end
     
     render json: { 
       error: "Internal Server Error", 
-      message: Rails.env.production? ? "Something went wrong" : exception.message,
+      message: Rails.env.production? ? "Something went wrong" : message,
       status: 500
     }, status: :internal_server_error
   end

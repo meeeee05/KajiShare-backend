@@ -2,12 +2,12 @@ module Api
   module V1
     class UsersController < ApplicationController
       before_action :set_user, only: [:show, :update, :destroy]
-      before_action :authenticate_user!  # 全アクションで認証必須
+      before_action :authenticate_user!, except: [:create]  # createは認証不要（新規登録）
       before_action :check_user_permission, only: [:show, :update, :destroy]  # 自分の情報のみアクセス可能
 
       # GET /api/v1/users - 現在のユーザーの情報のみ返す（セキュリティ向上）
       def index
-        render json: [current_user], each_serializer: UserSerializer
+        render json: current_user, serializer: UserSerializer
       end
 
       # GET /api/v1/users/:id
@@ -17,21 +17,34 @@ module Api
 
       # POST /api/v1/users
       def create
-        user = User.new(user_params)
-        
-        if user.save
-          render_user_success(user, :created)
-        else
-          handle_unprocessable_entity(user.errors.full_messages)
+        begin
+          # 既存ユーザーとの重複チェック
+          return if check_user_duplicates
+
+          user = User.new(user_params)
+          
+          if user.save
+            Rails.logger.info "User created: '#{user.name}' (ID: #{user.id}, Email: #{user.email})"
+            render_user_success(user, :created)
+          else
+            handle_unprocessable_entity(user.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to create user: #{e.message}")
         end
       end
 
       # PATCH/PUT /api/v1/users/:id
       def update
-        if @user.update(user_params)
-          render_user_success(@user)
-        else
-          handle_unprocessable_entity(@user.errors.full_messages)
+        begin
+          if @user.update(user_params)
+            Rails.logger.info "User updated: '#{@user.name}' (ID: #{@user.id}, Email: #{@user.email}) by user #{current_user.name}"
+            render_user_success(@user)
+          else
+            handle_unprocessable_entity(@user.errors.full_messages)
+          end
+        rescue StandardError => e
+          handle_internal_error("Failed to update user: #{e.message}")
         end
       end
 
@@ -54,9 +67,9 @@ module Api
               deleted_at: Time.current
             }, status: :ok
           end
-        rescue => e
+        rescue StandardError => e
           Rails.logger.error "Failed to delete user: #{e.message}"
-          handle_unprocessable_entity(["Failed to delete user: #{e.message}"])
+          handle_internal_error("Failed to delete user: #{e.message}")
         end
       end
 
@@ -82,6 +95,21 @@ module Api
       # ユーザー権限チェック：自分の情報のみアクセス可能
       def check_user_permission
         return handle_forbidden("You can only access your own user information") unless @user.id == current_user.id
+      end
+
+      # 重複チェック：既存ユーザーとの重複を確認
+      def check_user_duplicates
+        if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
+          handle_unprocessable_entity(["Email already exists"])
+          return true
+        end
+
+        if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
+          handle_unprocessable_entity(["Google account already registered"])
+          return true
+        end
+
+        false
       end
     end
   end
