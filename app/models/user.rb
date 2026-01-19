@@ -5,7 +5,7 @@ class User < ApplicationRecord
   has_many :assignments, through: :memberships, dependent: :destroy
   has_many :evaluations, foreign_key: :evaluator_id, dependent: :destroy
 
-  #バリデーション（フォーマットチェック）
+  #バリデーション
   validates :google_sub,
             presence: true,
             uniqueness: true

@@ -5,12 +5,10 @@ class MembershipSerializer < ActiveModel::Serializer
   belongs_to :user, serializer: BasicUserSerializer
   belongs_to :group, serializer: BasicGroupSerializer
 
-  # ユーザー名取得
   def user_name
     user&.name
   end
 
-  # グループ名取得
   def group_name
     group&.name
   end

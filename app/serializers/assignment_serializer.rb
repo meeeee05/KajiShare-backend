@@ -6,7 +6,6 @@ class AssignmentSerializer < ActiveModel::Serializer
   belongs_to :task, serializer: BasicTaskSerializer
   belongs_to :membership, serializer: MembershipSerializer
 
-  # Taskの名前を取得
   def task_name
     object.task&.name
   end
@@ -22,7 +21,7 @@ class AssignmentSerializer < ActiveModel::Serializer
     User.find_by(id: object.assigned_by_id)&.name
   end
 
-  # データベースのstatusカラムを使用
+  # DB内のstatusカラムを使用
   def status
     object.status
   end

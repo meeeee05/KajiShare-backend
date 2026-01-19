@@ -8,7 +8,7 @@ class Membership < ApplicationRecord
   # ロール管理
   enum :role, { member: "member", admin: "admin" }
 
-  #　バリデーション（フォーマットチェック）
+  #　バリデーション
   validates :role, presence: true
 
   validates :user_id, uniqueness:
@@ -29,9 +29,9 @@ class Membership < ApplicationRecord
 
   private
 
+  # 小数第一位まで許可
   def workload_ratio_precision
     return if workload_ratio.blank?
-    # 小数第二位以下がないかチェック（小数第一位まで許可）
     if (workload_ratio * 10) != (workload_ratio * 10).round
       errors.add(:workload_ratio, "は小数第一位までの値を入力してください")
     end
