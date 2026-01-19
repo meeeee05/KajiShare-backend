@@ -9,7 +9,7 @@ module Api
       
       # GET /api/v1/tasks/:task_id/assignments
       def index
-        assignments = @task.assignments
+        assignments = @task.assignments.order(:due_date)
         render json: assignments, each_serializer: AssignmentSerializer
       end
 
