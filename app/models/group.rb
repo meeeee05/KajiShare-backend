@@ -6,7 +6,7 @@ class Group < ApplicationRecord
   has_many :assignments, through: :tasks, dependent: :destroy
   has_many :evaluations, through: :assignments, dependent: :destroy
 
-  # バリデーション（フォーマットチェック）
+  # バリデーション
   validates :name,
             presence: true,
             length: { maximum: 100 }

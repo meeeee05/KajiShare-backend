@@ -1,7 +1,7 @@
 class UserSerializer < ActiveModel::Serializer
   attributes :id, :name, :email, :picture, :account_type, :groups_count, :active_groups
 
-  # メンバーシップ（グループ参加情報）を取得
+  # グループ参加情報を取得
   has_many :memberships, serializer: MembershipSerializer, if: :include_memberships?
 
   # アクティブなグループ情報をメモ化(クエリ実行)
