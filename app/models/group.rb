@@ -23,6 +23,5 @@ class Group < ApplicationRecord
             presence: true,
             inclusion: { in: %w[point time] }
 
-  validates :active,
-            inclusion: { in: [true, false] }
+  # active は boolean 型なので inclusion バリデーションは不要
 end
