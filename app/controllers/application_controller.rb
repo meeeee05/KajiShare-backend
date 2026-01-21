@@ -38,7 +38,7 @@ class ApplicationController < ActionController::API
     token = auth_header.split("Bearer ").last
     
     # test用トークンチェック
-    if Rails.env.development? && token.start_with?("test_")
+    if (Rails.env.development? || Rails.env.test?) && token.start_with?("test_")
       case token
       when "test_admin_taro"
         @current_user = User.find_by(google_sub: "1234567890abcde")  #Admin
