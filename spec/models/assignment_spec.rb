@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe Assignment, type: :model do
+  # 共通のテストデータ
+  let(:membership) { create(:membership) }
+  let(:task) { create(:task, group: membership.group) }
+  
   describe 'associations' do
     it { should belong_to(:task) }
     it { should belong_to(:membership) }
@@ -8,9 +12,6 @@ RSpec.describe Assignment, type: :model do
   end
 
   describe 'validations' do
-    let(:membership) { create(:membership) }
-    let(:task) { create(:task, group: membership.group) }
-
     describe 'presence validations' do
       it 'requires task_id' do
         assignment = build(:assignment, task: nil, membership: membership)
@@ -178,9 +179,6 @@ RSpec.describe Assignment, type: :model do
   end
 
   describe 'callbacks' do
-    let(:membership) { create(:membership) }
-    let(:task) { create(:task, group: membership.group) }
-
     describe 'sync_status_with_completed_date' do
       context 'when completed_date is present' do
         it 'automatically sets status to completed' do
@@ -303,9 +301,6 @@ RSpec.describe Assignment, type: :model do
   end
 
   describe 'business logic scenarios' do
-    let(:membership) { create(:membership) }
-    let(:task) { create(:task, group: membership.group) }
-
     describe 'assignment lifecycle' do
       it 'can progress from pending to in_progress to completed' do
         # Create pending assignment
