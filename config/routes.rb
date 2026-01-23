@@ -18,6 +18,8 @@ Rails.application.routes.draw do
       resources :tasks, only: [:index, :show] do
         resources :assignments, only: [:index, :create]
       end
+      # 直下でタスクのshow/update/destroyも許可
+      resources :tasks, only: [:show, :update, :destroy]
       
       #独立したリソース
       resources :assignments, only: [:show, :update, :destroy]
