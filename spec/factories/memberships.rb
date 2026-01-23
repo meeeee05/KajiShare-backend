@@ -1,4 +1,5 @@
 # spec/factories/memberships.rb
+# RSpec専用テストデータ生成
 FactoryBot.define do
   factory :membership do
     association :user

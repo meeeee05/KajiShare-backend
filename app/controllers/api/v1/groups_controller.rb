@@ -102,8 +102,8 @@ class Api::V1::GroupsController < ApplicationController
 
   # nilの場合や非アクティブの場合に403エラー
   def validate_membership(membership)
-    return handle_forbidden("You are not a member of this group") if membership.nil?
-    return handle_forbidden("Your membership is not active") unless membership.active?
+    return handle_forbidden("You are not a member of this group") && nil if membership.nil?
+    return handle_forbidden("Your membership is not active") && nil unless membership.active?
     membership
   end
 
@@ -112,14 +112,20 @@ class Api::V1::GroupsController < ApplicationController
     # indexアクションの場合は特別処理不要
     return if action_name == 'index'
     
-    validate_group_membership
+    membership = validate_group_membership
+    # validate_group_membershipがnilを返した場合は既にエラーレスポンスが送信されている
+    return unless membership 
   end
 
   # 権限チェック：Adminのみがグループの更新・削除を実行可能
   def check_admin_permission
     membership = validate_group_membership
+    # validate_group_membershipがnilを返した場合は既にエラーレスポンスが送信されている
+    return unless membership 
     
-    return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+    unless membership.admin?
+      handle_forbidden("You are not allowed to perform this action. Admin permission required.")
+    end
   end
 
   # 共通メソッド：グループのメンバーシップ検証

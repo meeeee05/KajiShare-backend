@@ -1,5 +1,6 @@
 class Api::V1::SessionsController < Api::V1::BaseController
-  require "google-id-token"
+  # require "google-id-token"
+  require 'googleauth/id_tokens/verifier'
 
   def google_auth
     auth_header = request.headers["Authorization"]
@@ -11,8 +12,9 @@ class Api::V1::SessionsController < Api::V1::BaseController
     token = auth_header.split("Bearer ").last
 
     begin
-      validator = GoogleIDToken::Validator.new
-      payload = validator.check(token, ENV["GOOGLE_CLIENT_ID"])
+      # validator = GoogleIDToken::Validator.new
+      # payload = validator.check(token, ENV["GOOGLE_CLIENT_ID"])
+      payload = Google::Auth::IDTokens.verify_oidc(token, aud: ENV["GOOGLE_CLIENT_ID"])
 
       sub = payload["sub"]
       email = payload["email"]
@@ -23,6 +25,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
         u.name = name
         u.email = email
         u.picture = picture
+        u.account_type = 'user'  # デフォルトでuserタイプに設定
       end
 
       render_success({ user: user }, "Login successful")

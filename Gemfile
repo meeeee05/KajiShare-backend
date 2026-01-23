@@ -37,6 +37,7 @@ gem "thruster", require: false
 
 gem 'rack-cors', require: 'rack/cors'
 gem "google-id-token"
+gem "googleauth"
 gem 'dotenv-rails'
 gem 'active_model_serializers', '~> 0.10.0'
 

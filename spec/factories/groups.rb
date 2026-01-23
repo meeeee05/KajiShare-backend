@@ -1,4 +1,5 @@
 # spec/factories/groups.rb
+# RSpec専用テストデータ生成
 FactoryBot.define do
   factory :group do
     sequence(:name) { |n| "Test Group #{n}" }

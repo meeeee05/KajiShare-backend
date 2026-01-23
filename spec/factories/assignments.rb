@@ -1,4 +1,5 @@
 # spec/factories/assignments.rb
+# RSpec専用テストデータ生成
 FactoryBot.define do
   factory :assignment do
     association :task

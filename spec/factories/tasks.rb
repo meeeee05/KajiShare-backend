@@ -1,4 +1,5 @@
 # spec/factories/tasks.rb
+# RSpec専用テストデータ生成
 FactoryBot.define do
   factory :task do
     association :group
