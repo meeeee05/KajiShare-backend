@@ -39,7 +39,7 @@ gem 'rack-cors', require: 'rack/cors'
 gem "google-id-token"
 gem "googleauth"
 gem 'dotenv-rails'
-gem 'active_model_serializers', '~> 0.10.0'
+gem 'active_model_serializers', '~> 0.10.16'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
