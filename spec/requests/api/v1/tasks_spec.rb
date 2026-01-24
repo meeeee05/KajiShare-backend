@@ -95,6 +95,20 @@ RSpec.describe "Api::V1::Tasks", type: :request do
       patch "/api/v1/tasks/#{task.id}", params: update_params, headers: headers
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "returns 404 if task does not exist" do
+      patch "/api/v1/tasks/99999999", params: update_params, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Task with ID")
+    end
+
+    it "returns 404 with invalid id format" do
+      patch "/api/v1/tasks/invalid_id", params: update_params, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Task with ID")
+    end
   end
 
   describe "DELETE /api/v1/tasks/:id" do
@@ -114,6 +128,22 @@ RSpec.describe "Api::V1::Tasks", type: :request do
       allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
       delete "/api/v1/tasks/#{task.id}", headers: headers
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns 404 if task does not exist" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(admin_user)
+      delete "/api/v1/tasks/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Task with ID")
+    end
+
+    it "returns 404 with invalid id format" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(admin_user)
+      delete "/api/v1/tasks/invalid_id", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Task with ID")
     end
   end
 end

@@ -46,6 +46,20 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       get "/api/v1/memberships/#{other_membership.id}", headers: headers
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "returns 404 if membership does not exist" do
+      get "/api/v1/memberships/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Membership with ID")
+    end
+
+    it "returns 404 with invalid id format" do
+      get "/api/v1/memberships/invalid_id", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Membership with ID")
+    end
   end
 
   describe "POST /api/v1/memberships" do
@@ -68,6 +82,12 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       post "/api/v1/memberships", params: { membership: { user_id: nil, group_id: group.id } }, headers: headers
       expect(response).to have_http_status(:unprocessable_content)
     end
+
+    it "returns forbidden if not admin" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+      post "/api/v1/memberships", params: valid_params, headers: headers
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
   describe "PUT /api/v1/memberships/:id" do
@@ -75,6 +95,19 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       put "/api/v1/memberships/#{member_membership.id}", params: { membership: { active: false } }, headers: headers
       expect(response).to have_http_status(:ok)
       expect(member_membership.reload.active).to be false
+    end
+
+    it "returns 404 if membership does not exist" do
+      put "/api/v1/memberships/99999999", params: { membership: { active: false } }, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Membership with ID")
+    end
+
+    it "returns forbidden if not admin" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+      put "/api/v1/memberships/#{member_membership.id}", params: { membership: { active: false } }, headers: headers
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -93,6 +126,20 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       }.not_to change(Membership, :count)
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "returns 404 if membership does not exist" do
+      delete "/api/v1/memberships/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Membership with ID")
+    end
+
+    it "returns forbidden if not admin" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+      membership = create(:membership, user: create(:user), group: group, role: 'member', active: true)
+      delete "/api/v1/memberships/#{membership.id}", headers: headers
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
   describe "PATCH /api/v1/memberships/:id/change_role" do
@@ -106,6 +153,19 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       patch "/api/v1/memberships/#{admin_membership.id}/change_role", params: { role: 'member' }, headers: headers
       expect(response).to have_http_status(:forbidden)
       expect(admin_membership.reload.role).to eq('admin')
+    end
+
+    it "returns 404 if membership does not exist" do
+      patch "/api/v1/memberships/99999999/change_role", params: { role: 'admin' }, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Membership with ID")
+    end
+
+    it "returns forbidden if not admin" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+      patch "/api/v1/memberships/#{member_membership.id}/change_role", params: { role: 'admin' }, headers: headers
+      expect(response).to have_http_status(:forbidden)
     end
   end
 end

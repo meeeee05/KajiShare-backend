@@ -87,10 +87,18 @@ module Api
       def validate_permission
         # indexアクションは結果フィルタリングで安全性を確保するため、権限チェック不要
         return if action_name == 'index'
-        
+
         group_id, required_role = case action_name
         when 'create'
-          assignment = Assignment.find(evaluation_params[:assignment_id])
+          assignment_id = evaluation_params[:assignment_id]
+          if assignment_id.blank?
+            return handle_unprocessable_entity(['Assignment must exist'])
+          end
+          begin
+            assignment = Assignment.find(assignment_id)
+          rescue ActiveRecord::RecordNotFound
+            return handle_unprocessable_entity(["Assignment must exist"])
+          end
           [assignment.task.group_id, 'member']
         when 'show', 'update'
           [@evaluation.assignment.task.group_id, 'member']

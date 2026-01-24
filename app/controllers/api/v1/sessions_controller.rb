@@ -21,6 +21,11 @@ class Api::V1::SessionsController < Api::V1::BaseController
       name = payload["name"]
       picture = payload["picture"]
 
+      if sub.blank?
+        Rails.logger.warn "Google Auth Error: sub is missing"
+        return render json: { error: "Invalid ID token" }, status: :unauthorized
+      end
+
       user = User.find_or_create_by(google_sub: sub) do |u|
         u.name = name
         u.email = email

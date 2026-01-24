@@ -148,5 +148,22 @@ RSpec.describe "Api::V1::Sessions", type: :request do
         expect(json_response["error"]).to eq("Invalid ID token")
       end
     end
+
+    context "with Google ID token missing sub field" do
+      before do
+        allow(Google::Auth::IDTokens).to receive(:verify_oidc)
+          .with(valid_token, aud: ENV["GOOGLE_CLIENT_ID"])
+          .and_return(mock_payload.merge("sub" => nil))
+      end
+
+      it "returns unauthorized if sub is missing" do
+        post "/api/v1/auth/google",
+             headers: { "Authorization" => "Bearer #{valid_token}" }
+
+        expect(response).to have_http_status(:unauthorized)
+        json_response = JSON.parse(response.body)
+        expect(json_response["error"]).to eq("Invalid ID token")
+      end
+    end
   end
 end

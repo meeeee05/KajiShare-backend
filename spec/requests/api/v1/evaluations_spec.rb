@@ -35,6 +35,27 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       json = JSON.parse(response.body)
       expect(json["data"]["id"].to_i).to eq(evaluation.id)
     end
+    it "returns 404 if evaluation does not exist" do
+      get "/api/v1/evaluations/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Evaluation with ID")
+    end
+    it "returns 404 with invalid id format" do
+      get "/api/v1/evaluations/invalid_id", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Evaluation with ID")
+    end
+    it "returns forbidden if user is not group member" do
+      other_group = create(:group)
+      other_task = create(:task, group: other_group)
+      other_membership = create(:membership, user: create(:user), group: other_group, role: 'member', active: true)
+      other_assignment = create(:assignment, :completed, task: other_task, membership: other_membership, due_date: 2.days.ago, completed_date: 1.day.ago)
+      other_evaluation = create(:evaluation, assignment: other_assignment, evaluator_id: other_membership.user.id)
+      get "/api/v1/evaluations/#{other_evaluation.id}", headers: headers
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
   describe "POST /api/v1/evaluations" do
@@ -53,6 +74,21 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       json = JSON.parse(response.body)
       expect(json["data"]["attributes"]["score"]).to eq(4)
     end
+    it "returns 422 if params invalid" do
+      post "/api/v1/evaluations", params: { evaluation: { assignment_id: nil, score: nil } }, headers: headers
+      expect(response).to have_http_status(:unprocessable_entity)
+      json = JSON.parse(response.body)
+      expect(json["errors"]).to be_present
+    end
+    it "returns forbidden if user is not group member" do
+      other_group = create(:group)
+      other_task = create(:task, group: other_group)
+      other_membership = create(:membership, user: create(:user), group: other_group, role: 'member', active: true)
+      other_assignment = create(:assignment, :completed, task: other_task, membership: other_membership, due_date: 2.days.ago, completed_date: 1.day.ago)
+      params = { evaluation: { assignment_id: other_assignment.id, score: 3, feedback: "test" } }
+      post "/api/v1/evaluations", params: params, headers: headers
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
   describe "PATCH /api/v1/evaluations/:id" do
@@ -62,6 +98,21 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
       expect(json["data"]["attributes"]["feedback"]).to eq("updated!")
+    end
+    it "returns 404 if evaluation does not exist" do
+      patch "/api/v1/evaluations/99999999", params: { evaluation: { feedback: "x" } }, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Evaluation with ID")
+    end
+    it "returns forbidden if user is not group member" do
+      other_group = create(:group)
+      other_task = create(:task, group: other_group)
+      other_membership = create(:membership, user: create(:user), group: other_group, role: 'member', active: true)
+      other_assignment = create(:assignment, :completed, task: other_task, membership: other_membership, due_date: 2.days.ago, completed_date: 1.day.ago)
+      other_evaluation = create(:evaluation, assignment: other_assignment, evaluator_id: other_membership.user.id)
+      patch "/api/v1/evaluations/#{other_evaluation.id}", params: { evaluation: { feedback: "x" } }, headers: headers
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -81,6 +132,13 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       evaluation_to_delete = create(:evaluation, assignment: assignment, evaluator_id: admin_user.id)
       delete "/api/v1/evaluations/#{evaluation_to_delete.id}", headers: headers
       expect(response).to have_http_status(:forbidden)
+    end
+    it "returns 404 if evaluation does not exist" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(admin_user)
+      delete "/api/v1/evaluations/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Evaluation with ID")
     end
   end
 end

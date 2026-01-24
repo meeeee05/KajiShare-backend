@@ -45,7 +45,6 @@ RSpec.describe "Api::V1::Groups", type: :request do
         expect(response).to have_http_status(:ok)
         
         json_response = JSON.parse(response.body)
-        expect(json_response).to have_key("data")
         expect(json_response["data"]).to eq([])
       end
     end
@@ -117,6 +116,13 @@ RSpec.describe "Api::V1::Groups", type: :request do
         json_response = JSON.parse(response.body)
         expect(json_response["message"]).to include("membership is not active")
       end
+    end
+
+    it "returns 404 if group id is invalid" do
+      get "/api/v1/groups/invalid_id", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json_response = JSON.parse(response.body)
+      expect(json_response["message"]).to include("not found")
     end
   end
 
@@ -255,6 +261,20 @@ RSpec.describe "Api::V1::Groups", type: :request do
         expect(json_response["error"]).to be_present
       end
     end
+
+    it "returns 404 if group does not exist" do
+      patch "/api/v1/groups/99999999", params: update_attributes, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json_response = JSON.parse(response.body)
+      expect(json_response["message"]).to include("not found")
+    end
+
+    it "returns 404 if group id is invalid" do
+      patch "/api/v1/groups/invalid_id", params: update_attributes, headers: headers
+      expect(response).to have_http_status(:not_found)
+      json_response = JSON.parse(response.body)
+      expect(json_response["message"]).to include("not found")
+    end
   end
 
   describe "DELETE /api/v1/groups/:id" do
@@ -306,6 +326,20 @@ RSpec.describe "Api::V1::Groups", type: :request do
         json_response = JSON.parse(response.body)
         expect(json_response["message"]).to include("not a member")
       end
+    end
+
+    it "returns 404 if group does not exist" do
+      delete "/api/v1/groups/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json_response = JSON.parse(response.body)
+      expect(json_response["message"]).to include("not found")
+    end
+
+    it "returns 404 if group id is invalid" do
+      delete "/api/v1/groups/invalid_id", headers: headers
+      expect(response).to have_http_status(:not_found)
+      json_response = JSON.parse(response.body)
+      expect(json_response["message"]).to include("not found")
     end
   end
 end
