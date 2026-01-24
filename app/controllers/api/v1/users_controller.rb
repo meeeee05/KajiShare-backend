@@ -94,7 +94,12 @@ module Api
 
       # ユーザー権限チェック：自分の情報のみアクセス可能
       def check_user_permission
-        return handle_forbidden("You can only access your own user information") unless @user.id == current_user.id
+        if current_user.nil?
+          return handle_unauthorized("You need to sign in or sign up before continuing.")
+        end
+        action = action_name == 'update' ? 'update' : 'access'
+        message = "You can only #{action} your own user information"
+        return handle_forbidden(message) unless @user.id == current_user.id
       end
 
       # 重複チェック：既存ユーザーとの重複を確認

@@ -130,11 +130,12 @@ RSpec.describe 'Users API', type: :request do
           user.email = 'admin@example.com'
           user.account_type = 'admin'
         end
+        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user)
       end
 
       let(:other_user) { create(:user, email: 'other@example.com', google_sub: 'other123') }
 
-      xit 'returns 403 forbidden - skip for now due to DatabaseCleaner issue' do
+      it 'returns 403 forbidden - 他人の情報取得はできない' do
         get "/api/v1/users/#{other_user.id}", headers: auth_headers
 
         expect(response).to have_http_status(403)
@@ -229,6 +230,9 @@ RSpec.describe 'Users API', type: :request do
 
     context 'updating other user info' do
       let(:other_user) { create(:user, email: 'other2@example.com', google_sub: 'other456') }
+      before do
+        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user)
+      end
       it 'returns 403 forbidden' do
         patch "/api/v1/users/#{other_user.id}", params: update_params, headers: auth_headers
         expect(response).to have_http_status(403)
