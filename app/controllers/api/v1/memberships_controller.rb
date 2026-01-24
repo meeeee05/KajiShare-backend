@@ -110,7 +110,7 @@ module Api
       # 通常の更新用パラメータ（roleは専用エンドポイントで変更）
       def membership_params
         # roleの変更は専用のchange_roleエンドポイントでのみ可能
-        params.require(:membership).permit(:user_id, :group_id, :workload_ratio, :active)
+        params.require(:membership).permit(:user_id, :group_id, :workload_ratio, :active, :role)
       end
 
       # 現在のユーザーのメンバーシップ取得（権限チェック込み）
@@ -169,7 +169,7 @@ module Api
         when 'index'
           params[:group_id]
         when 'create'
-          params.dig(:membership, :group_id)
+          params.dig(:membership, :group_id) || params.dig('membership', 'group_id')
         else
           @membership&.group_id
         end

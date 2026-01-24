@@ -1,5 +1,5 @@
 class MembershipSerializer < ActiveModel::Serializer
-  attributes :id, :role, :workload_ratio, :active, :user_name, :group_name, 
+  attributes :id, :role, :workload_ratio, :active, :user_id, :group_id, :user_name, :group_name, 
              :assignments_count, :completed_assignments_count
 
   belongs_to :user, serializer: BasicUserSerializer
