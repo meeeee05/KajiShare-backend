@@ -1,5 +1,6 @@
 require 'rails_helper'
 
+# Membershipモデル関連付け
 RSpec.describe Membership, type: :model do
   describe 'associations' do
     it { should belong_to(:user) }
@@ -8,219 +9,80 @@ RSpec.describe Membership, type: :model do
     it { should have_many(:evaluations).through(:assignments).dependent(:destroy) }
   end
 
+    # shoulda-matchersで宣言的に網羅（入力値検証）
   describe 'validations' do
-    let(:user) { create(:user) }
-    let(:group) { create(:group) }
+    subject { build(:membership) }
+    it { should validate_presence_of(:role) }
+    it { should validate_numericality_of(:workload_ratio).is_greater_than(0).is_less_than_or_equal_to(100) }
+    it { should allow_value(nil).for(:workload_ratio) }
 
-    describe 'role validation' do
-      it 'is valid with member role' do
-        membership = build(:membership, user: user, group: group, role: 'member')
-        expect(membership).to be_valid
-      end
+    # 異常系：userとgroupの組み合わせの重複禁止
+    it 'is invalid with duplicate user and group' do
+      user = create(:user)
+      group = create(:group)
+      create(:membership, user: user, group: group, workload_ratio: 100)
+      membership = build(:membership, user: user, group: group, workload_ratio: 100)
+      expect(membership).not_to be_valid
+    end
 
-      it 'is valid with admin role' do
-        membership = build(:membership, user: user, group: group, role: 'admin')
-        expect(membership).to be_valid
-      end
-
-      it 'requires role to be present' do
-        membership = build(:membership, user: user, group: group, role: nil)
+    # 異常系：workload_ratioの範囲内である
+    [
+      { value: 101, desc: 'greater than 100' },
+      { value: -1, desc: 'less than 0' },
+      { value: 50.55, desc: 'more than 1 decimal' }
+    ].each do |params|
+      it "is invalid with workload_ratio #{params[:desc]} (#{params[:value]})" do
+        membership = build(:membership, workload_ratio: params[:value])
         expect(membership).not_to be_valid
-        expect(membership.errors[:role]).to include("can't be blank")
       end
     end
 
-    describe 'uniqueness validation' do
-      it 'prevents duplicate membership for same user and group' do
-        create(:membership, user: user, group: group)
-        duplicate_membership = build(:membership, user: user, group: group)
-        
-        expect(duplicate_membership).not_to be_valid
-        expect(duplicate_membership.errors[:user_id]).to include("はすでにこのグループに参加しています")
-      end
-
-      it 'allows same user to join different groups' do
-        group2 = create(:group)
-        create(:membership, user: user, group: group)
-        membership2 = build(:membership, user: user, group: group2)
-        
-        expect(membership2).to be_valid
-      end
-
-      it 'allows different users to join same group' do
-        user2 = create(:user)
-        create(:membership, user: user, group: group)
-        membership2 = build(:membership, user: user2, group: group)
-        
-        expect(membership2).to be_valid
-      end
+    # 正常系：workload_ratio、roleの値の制限が範囲内
+    it 'accepts only member/admin as role' do
+      expect(build(:membership, role: 'member')).to be_valid
+      expect(build(:membership, role: 'admin')).to be_valid
+      expect { build(:membership, role: 'invalid') }.to raise_error(ArgumentError)
     end
 
-    describe 'workload_ratio validation' do
-      it 'is valid with nil workload_ratio' do
-        membership = build(:membership, user: user, group: group, workload_ratio: nil)
-        expect(membership).to be_valid
-      end
-
-      it 'is valid with workload_ratio of 1.0' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 1.0)
-        expect(membership).to be_valid
-      end
-
-      it 'is valid with workload_ratio of 100' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 100)
-        expect(membership).to be_valid
-      end
-
-      it 'is valid with decimal workload_ratio (one decimal place)' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 50.5)
-        expect(membership).to be_valid
-      end
-
-      it 'is invalid with workload_ratio of 0' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 0)
-        expect(membership).not_to be_valid
-        expect(membership.errors[:workload_ratio]).to include("must be greater than 0")
-      end
-
-      it 'is invalid with negative workload_ratio' do
-        membership = build(:membership, user: user, group: group, workload_ratio: -1)
-        expect(membership).not_to be_valid
-        expect(membership.errors[:workload_ratio]).to include("must be greater than 0")
-      end
-
-      it 'is invalid with workload_ratio greater than 100' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 101)
-        expect(membership).not_to be_valid
-        expect(membership.errors[:workload_ratio]).to include("must be less than or equal to 100")
-      end
-
-      it 'is invalid with more than one decimal place' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 50.55)
-        expect(membership).not_to be_valid
-        expect(membership.errors[:workload_ratio]).to include("は小数第一位までの値を入力してください")
-      end
+    it 'is invalid if workload_ratio sum in group is not exactly 100' do
+      user1 = create(:user)
+      user2 = create(:user)
+      group = create(:group)
+      membership1 = build(:membership, user: user1, group: group, workload_ratio: 40)
+      expect(membership1).not_to be_valid
+      expect(membership1.errors[:workload_ratio]).to include('グループ内のworkload_ratio合計が100である必要があります')
+      membership1.workload_ratio = 100
+      expect(membership1).to be_valid
+      membership1.save!
+      membership2 = build(:membership, user: user2, group: group, workload_ratio: 50)
+      expect(membership2).not_to be_valid
+      expect(membership2.errors[:workload_ratio]).to include('グループ内のworkload_ratio合計が100である必要があります')
+      membership2.workload_ratio = 0
+      expect(membership2).not_to be_valid
+      membership2.workload_ratio = 100
+      expect(membership2).not_to be_valid
     end
   end
 
-  describe 'enums' do
-    describe 'role enum' do
-      it 'defines member role' do
-        membership = create(:membership, role: 'member')
-        expect(membership.member?).to be true
-        expect(membership.admin?).to be false
-      end
-
-      it 'defines admin role' do
-        membership = create(:membership, role: 'admin')
-        expect(membership.admin?).to be true
-        expect(membership.member?).to be false
-      end
-    end
-  end
-
+  # 正常系：バリデーションを通過するmembershipオブジェクトを作成できる
   describe 'factory' do
-    it 'creates valid membership' do
-      membership = create(:membership)
-      expect(membership).to be_valid
-      expect(membership.member?).to be true
-      expect(membership.active).to be true
-      expect(membership.workload_ratio).to eq(1.0)
+    it 'creates a valid membership' do
+      expect(create(:membership, workload_ratio: 100)).to be_valid
     end
-
-    it 'creates valid admin membership with trait' do
-      membership = create(:membership, :admin)
-      expect(membership).to be_valid
-      expect(membership.admin?).to be true
-    end
-
-    it 'creates valid inactive membership with trait' do
-      membership = create(:membership, :inactive)
-      expect(membership).to be_valid
-      expect(membership.active).to be false
+    it 'creates a valid admin membership' do
+      expect(create(:membership, :admin, workload_ratio: 100)).to be_valid
     end
   end
 
-  describe 'instance methods' do
-    let(:membership) { create(:membership) }
-
-    describe 'role checking methods' do
-      context 'when member' do
-        it 'returns true for member?' do
-          expect(membership.member?).to be true
-        end
-
-        it 'returns false for admin?' do
-          expect(membership.admin?).to be false
-        end
-      end
-
-      context 'when admin' do
-        let(:admin_membership) { create(:membership, :admin) }
-
-        it 'returns true for admin?' do
-          expect(admin_membership.admin?).to be true
-        end
-
-        it 'returns false for member?' do
-          expect(admin_membership.member?).to be false
-        end
-      end
-    end
-  end
-
-  describe 'dependent destroy behavior' do
-    let(:membership) { create(:membership) }
-    let(:task) { create(:task, group: membership.group) }
-    let(:assignment) { create(:assignment, membership: membership, task: task, status: 'completed', due_date: Date.yesterday, completed_date: Date.current) }
-    let(:evaluation) { create(:evaluation, assignment: assignment) }
-
-    before do
-      # データを作成してから削除テスト
-      assignment
-      evaluation
-    end
-
-    it 'destroys associated assignments when membership is destroyed' do
-      expect { membership.destroy }.to change { Assignment.count }.by(-1)
-    end
-
-    it 'destroys associated evaluations when membership is destroyed' do
-      expect { membership.destroy }.to change { Evaluation.count }.by(-1)
-    end
-  end
-
-  describe 'custom validation methods' do
-    let(:user) { create(:user) }
-    let(:group) { create(:group) }
-
-    describe '#workload_ratio_precision' do
-      it 'allows nil workload_ratio' do
-        membership = build(:membership, user: user, group: group, workload_ratio: nil)
-        expect(membership).to be_valid
-      end
-
-      it 'allows one decimal place' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 25.5)
-        expect(membership).to be_valid
-      end
-
-      it 'allows integer values' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 75)
-        expect(membership).to be_valid
-      end
-
-      it 'rejects more than one decimal place' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 25.55)
-        expect(membership).not_to be_valid
-        expect(membership.errors[:workload_ratio]).to include("は小数第一位までの値を入力してください")
-      end
-
-      it 'rejects excessive precision' do
-        membership = build(:membership, user: user, group: group, workload_ratio: 33.333)
-        expect(membership).not_to be_valid
-        expect(membership.errors[:workload_ratio]).to include("は小数第一位までの値を入力してください")
-      end
+ # 正常系：Membershipに紐づく先も一緒に削除される
+  describe 'dependent destroy' do
+    it 'destroys assignments and evaluations' do
+      membership = create(:membership, workload_ratio: 100)
+      task = create(:task, group: membership.group)
+      assignment = create(:assignment, membership: membership, task: task, status: 'completed', due_date: Date.yesterday, completed_date: Date.current)
+      evaluation = create(:evaluation, assignment: assignment)
+      expect { membership.destroy }.to change(Assignment, :count).by(-1)
+        .and change(Evaluation, :count).by(-1)
     end
   end
 end

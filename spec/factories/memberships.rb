@@ -5,7 +5,7 @@ FactoryBot.define do
     association :user
     association :group
     role { "member" }
-    workload_ratio { 1.0 }
+    workload_ratio { 100.0 }
     active { true }
 
     trait :admin do
