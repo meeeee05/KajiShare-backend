@@ -1,43 +1,55 @@
+
 require 'rails_helper'
 
 RSpec.describe 'Users API', type: :request do
   let(:auth_headers) { { 'Authorization' => 'Bearer test_admin_taro' } }
   let(:invalid_headers) { { 'Authorization' => 'Bearer invalid_token' } }
+  let(:json_response) { JSON.parse(response.body) }
+
+  let!(:test_user) do
+    User.find_or_create_by!(google_sub: '1234567890abcde') do |user|
+      user.name = 'Test Admin'
+      user.email = 'admin@example.com'
+      user.account_type = 'admin'
+    end
+  end
+
+  shared_examples 'status and message' do |status, message|
+    it "returns #{status} and message" do
+      subject
+      expect(response).to have_http_status(status)
+      expect(json_response['message']).to include(message) if message
+    end
+  end
+
+  shared_examples 'user attributes' do |name, email, account_type|
+    it 'returns correct user attributes' do
+      subject
+      expect(json_response['data']['attributes']['name']).to eq(name)
+      expect(json_response['data']['attributes']['email']).to eq(email)
+      expect(json_response['data']['attributes']['account_type']).to eq(account_type) if account_type
+    end
+  end
 
   describe 'GET /api/v1/users' do
-    it 'returns 401 without auth' do
-      get '/api/v1/users'
-      expect(response).to have_http_status(401)
-      
-      json_response = JSON.parse(response.body)
-      expect(json_response['message']).to eq('No authentication token provided')
+    subject { get '/api/v1/users', headers: headers }
+
+    context 'without auth' do
+      let(:headers) { {} }
+      include_examples 'status and message', 401, 'No authentication token provided'
     end
 
-    it 'returns 401 with invalid token' do
-      get '/api/v1/users', headers: invalid_headers
-      expect(response).to have_http_status(401)
-      
-      json_response = JSON.parse(response.body)
-      expect(json_response['message']).to eq('Invalid or expired authentication token')
+    context 'with invalid token' do
+      let(:headers) { invalid_headers }
+      include_examples 'status and message', 401, 'Invalid or expired authentication token'
     end
 
     context 'with valid auth' do
-      before do
-        # テスト用ユーザーを作成（application_controllerで参照される）
-        User.find_or_create_by!(google_sub: '1234567890abcde') do |user|
-          user.name = 'Test Admin'
-          user.email = 'admin@example.com'
-          user.account_type = 'admin'
-        end
-      end
-
-      it 'returns current user info' do
-        get '/api/v1/users', headers: auth_headers
-        
+      let(:headers) { auth_headers }
+      it 'returns 200 and user info' do
+        subject
         expect(response).to have_http_status(200)
         expect(response.content_type).to match(a_string_including('application/json'))
-        
-        json_response = JSON.parse(response.body)
         expect(json_response['data']['attributes']['name']).to eq('Test Admin')
         expect(json_response['data']['attributes']['email']).to eq('admin@example.com')
         expect(json_response['data']['attributes']['account_type']).to eq('admin')
@@ -57,127 +69,83 @@ RSpec.describe 'Users API', type: :request do
       }
     end
 
-    it 'creates user with valid params' do
-      expect {
-        post '/api/v1/users', params: valid_params
-      }.to change(User, :count).by(1)
+    subject { post '/api/v1/users', params: params }
 
-      expect(response).to have_http_status(201)
-      json_response = JSON.parse(response.body)
-      expect(json_response['data']['attributes']['name']).to eq('New User')
-      expect(json_response['data']['attributes']['email']).to eq('newuser@example.com')
-      expect(json_response['data']['attributes']['account_type']).to eq('user')
+    context 'with valid params' do
+      let(:params) { valid_params }
+      it 'creates user and returns 201' do
+        expect { subject }.to change(User, :count).by(1)
+        expect(response).to have_http_status(201)
+        expect(json_response['data']['attributes']['name']).to eq('New User')
+      end
     end
 
-    it 'returns 422 with invalid email' do
-      invalid_params = valid_params.deep_dup
-      invalid_params[:user][:email] = 'invalid-email'
-
-      post '/api/v1/users', params: invalid_params
-
-      expect(response).to have_http_status(422)
-      json_response = JSON.parse(response.body)
-      expect(json_response['errors']).to include('Email is invalid')
+    context 'with invalid email' do
+      let(:params) { valid_params.deep_dup.tap { |p| p[:user][:email] = 'invalid-email' } }
+      it 'returns 422' do
+        subject
+        expect(response).to have_http_status(422)
+        expect(json_response['errors']).to include('Email is invalid')
+      end
     end
 
-    it 'returns 422 with duplicate email' do
-      create(:user, email: 'duplicate@example.com')
-      
-      duplicate_params = valid_params.deep_dup
-      duplicate_params[:user][:email] = 'duplicate@example.com'
-
-      post '/api/v1/users', params: duplicate_params
-
-      expect(response).to have_http_status(422)
-      json_response = JSON.parse(response.body)
-      expect(json_response['errors']).to include('Email already exists')
+    context 'with duplicate email' do
+      let(:params) { valid_params.deep_dup.tap { |p| p[:user][:email] = 'duplicate@example.com' } }
+      before { create(:user, email: 'duplicate@example.com') }
+      it 'returns 422' do
+        subject
+        expect(response).to have_http_status(422)
+        expect(json_response['errors']).to include('Email already exists')
+      end
     end
 
-    it 'returns 500 with missing params' do
-      post '/api/v1/users', params: {}
-
-      expect(response).to have_http_status(500)
-      json_response = JSON.parse(response.body)
-      expect(json_response['message']).to include('param is missing or the value is empty or invalid: user')
+    context 'with missing params' do
+      let(:params) { {} }
+      include_examples 'status and message', 500, 'param is missing or the value is empty or invalid: user'
     end
   end
 
   describe 'GET /api/v1/users/:id' do
-    let(:test_user) do
-      User.find_or_create_by!(google_sub: '1234567890abcde') do |user|
-        user.name = 'Test Admin'
-        user.email = 'admin@example.com'
-        user.account_type = 'admin'
-      end
-    end
+    subject { get "/api/v1/users/#{user_id}", headers: headers }
 
     context 'with valid auth accessing own info' do
+      let(:user_id) { test_user.id }
+      let(:headers) { auth_headers }
       it 'returns user info' do
-        get "/api/v1/users/#{test_user.id}", headers: auth_headers
-
+        subject
         expect(response).to have_http_status(200)
-        json_response = JSON.parse(response.body)
         expect(json_response['data']['attributes']['name']).to eq('Test Admin')
         expect(json_response['data']['attributes']['email']).to eq('admin@example.com')
       end
     end
 
     context 'accessing other users info' do
-      before do
-        # テスト用ユーザーを確実に作成
-        User.find_or_create_by!(google_sub: '1234567890abcde') do |user|
-          user.name = 'Test Admin'
-          user.email = 'admin@example.com'
-          user.account_type = 'admin'
-        end
-        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user)
-      end
-
       let(:other_user) { create(:user, email: 'other@example.com', google_sub: 'other123') }
-
-      it 'returns 403 forbidden - 他人の情報取得はできない' do
-        get "/api/v1/users/#{other_user.id}", headers: auth_headers
-
-        expect(response).to have_http_status(403)
-        json_response = JSON.parse(response.body)
-        expect(json_response['message']).to include('You can only access your own user information')
-      end
+      let(:user_id) { other_user.id }
+      let(:headers) { auth_headers }
+      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user) }
+      include_examples 'status and message', 403, 'You can only access your own user information'
     end
 
     context 'without auth' do
-      it 'returns 401 unauthorized' do
-        get "/api/v1/users/#{test_user.id}"
-
-        expect(response).to have_http_status(401)
-      end
+      let(:user_id) { test_user.id }
+      let(:headers) { {} }
+      include_examples 'status and message', 401, nil
     end
 
     context 'with non-existent user id' do
-      it 'returns 404 not found' do
-        get "/api/v1/users/99999999", headers: auth_headers
-        expect(response).to have_http_status(404)
-        json_response = JSON.parse(response.body)
-        expect(json_response['message']).to include('User with ID')
-      end
+      let(:user_id) { 99999999 }
+      let(:headers) { auth_headers }
+      include_examples 'status and message', 404, 'User with ID'
 
-      it 'returns 404 with invalid id format' do
-        get "/api/v1/users/invalid_id", headers: auth_headers
-        expect(response).to have_http_status(404)
-        json_response = JSON.parse(response.body)
-        expect(json_response['message']).to include('User with ID')
+      context 'with invalid id format' do
+        let(:user_id) { 'invalid_id' }
+        include_examples 'status and message', 404, 'User with ID'
       end
     end
   end
 
   describe 'PATCH /api/v1/users/:id' do
-    let(:test_user) do
-      User.find_or_create_by!(google_sub: '1234567890abcde') do |user|
-        user.name = 'Test Admin'
-        user.email = 'admin@example.com'
-        user.account_type = 'admin'
-      end
-    end
-
     let(:update_params) do
       {
         user: {
@@ -187,18 +155,17 @@ RSpec.describe 'Users API', type: :request do
       }
     end
 
-    context 'with valid auth updating own info' do
-      it 'updates user info' do
-        patch "/api/v1/users/#{test_user.id}", 
-              params: update_params, 
-              headers: auth_headers
+    subject { patch "/api/v1/users/#{user_id}", params: params, headers: headers }
 
+    context 'with valid auth updating own info' do
+      let(:user_id) { test_user.id }
+      let(:params) { update_params }
+      let(:headers) { auth_headers }
+      it 'updates user info' do
+        subject
         expect(response).to have_http_status(200)
-        json_response = JSON.parse(response.body)
         expect(json_response['data']['attributes']['name']).to eq('Updated Name')
         expect(json_response['data']['attributes']['email']).to eq('updated@example.com')
-
-        # DBでの更新確認
         test_user.reload
         expect(test_user.name).to eq('Updated Name')
         expect(test_user.email).to eq('updated@example.com')
@@ -206,39 +173,30 @@ RSpec.describe 'Users API', type: :request do
     end
 
     context 'with invalid params' do
+      let(:user_id) { test_user.id }
+      let(:params) { { user: { email: 'invalid-email' } } }
+      let(:headers) { auth_headers }
       it 'returns 422 with invalid email' do
-        invalid_params = { user: { email: 'invalid-email' } }
-        
-        patch "/api/v1/users/#{test_user.id}", 
-              params: invalid_params, 
-              headers: auth_headers
-
+        subject
         expect(response).to have_http_status(422)
-        json_response = JSON.parse(response.body)
         expect(json_response['errors']).to include('Email is invalid')
       end
     end
 
     context 'with non-existent user id' do
-      it 'returns 404 not found' do
-        patch "/api/v1/users/99999999", params: update_params, headers: auth_headers
-        expect(response).to have_http_status(404)
-        json_response = JSON.parse(response.body)
-        expect(json_response['message']).to include('User with ID')
-      end
+      let(:user_id) { 99999999 }
+      let(:params) { update_params }
+      let(:headers) { auth_headers }
+      include_examples 'status and message', 404, 'User with ID'
     end
 
     context 'updating other user info' do
       let(:other_user) { create(:user, email: 'other2@example.com', google_sub: 'other456') }
-      before do
-        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user)
-      end
-      it 'returns 403 forbidden' do
-        patch "/api/v1/users/#{other_user.id}", params: update_params, headers: auth_headers
-        expect(response).to have_http_status(403)
-        json_response = JSON.parse(response.body)
-        expect(json_response['message']).to include('You can only update your own user information')
-      end
+      let(:user_id) { other_user.id }
+      let(:params) { update_params }
+      let(:headers) { auth_headers }
+      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user) }
+      include_examples 'status and message', 403, 'You can only update your own user information'
     end
   end
 end
