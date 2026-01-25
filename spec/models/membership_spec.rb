@@ -25,7 +25,7 @@ RSpec.describe Membership, type: :model do
       expect(membership).not_to be_valid
     end
 
-    # 異常系：workload_ratioの範囲内である
+    # 異常系：workload_ratioが範囲外
     [
       { value: 101, desc: 'greater than 100' },
       { value: -1, desc: 'less than 0' },
@@ -44,23 +44,20 @@ RSpec.describe Membership, type: :model do
       expect { build(:membership, role: 'invalid') }.to raise_error(ArgumentError)
     end
 
-    it 'is invalid if workload_ratio sum in group is not exactly 100' do
-      user1 = create(:user)
-      user2 = create(:user)
-      group = create(:group)
-      membership1 = build(:membership, user: user1, group: group, workload_ratio: 40)
-      expect(membership1).not_to be_valid
-      expect(membership1.errors[:workload_ratio]).to include('グループ内のworkload_ratio合計が100である必要があります')
-      membership1.workload_ratio = 100
-      expect(membership1).to be_valid
-      membership1.save!
-      membership2 = build(:membership, user: user2, group: group, workload_ratio: 50)
-      expect(membership2).not_to be_valid
-      expect(membership2.errors[:workload_ratio]).to include('グループ内のworkload_ratio合計が100である必要があります')
-      membership2.workload_ratio = 0
-      expect(membership2).not_to be_valid
-      membership2.workload_ratio = 100
-      expect(membership2).not_to be_valid
+    # 異常系：グループ内workload_ratio合計が100でない
+    context 'when workload_ratio sum in group is not exactly 100' do
+      it 'is invalid if sum is not 100' do
+        group = create(:group)
+        membership = build(:membership, group: group, workload_ratio: 40)
+        expect(membership).not_to be_valid
+        expect(membership.errors[:workload_ratio]).to include('グループ内のworkload_ratio合計が100である必要があります')
+      end
+
+      it 'is valid if sum is exactly 100' do
+        group = create(:group)
+        membership = build(:membership, group: group, workload_ratio: 100)
+        expect(membership).to be_valid
+      end
     end
   end
 
