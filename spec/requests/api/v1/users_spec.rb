@@ -22,15 +22,6 @@ RSpec.describe 'Users API', type: :request do
     end
   end
 
-  shared_examples 'user attributes' do |name, email, account_type|
-    it 'returns correct user attributes' do
-      subject
-      expect(json_response['data']['attributes']['name']).to eq(name)
-      expect(json_response['data']['attributes']['email']).to eq(email)
-      expect(json_response['data']['attributes']['account_type']).to eq(account_type) if account_type
-    end
-  end
-
   describe 'GET /api/v1/users' do
     subject { get '/api/v1/users', headers: headers }
 
@@ -99,9 +90,10 @@ RSpec.describe 'Users API', type: :request do
       end
     end
 
+    # 異常系：必須パラメータ欠如
     context 'with missing params' do
       let(:params) { {} }
-      include_examples 'status and message', 500, 'param is missing or the value is empty or invalid: user'
+      include_examples 'status and message', 400, 'Required parameter missing: user'
     end
   end
 

@@ -17,21 +17,22 @@ module Api
 
       # POST /api/v1/users
       def create
-        begin
-          # 既存ユーザーとの重複チェック
-          return if check_user_duplicates
+        # 既存ユーザーとの重複チェック
+        return if check_user_duplicates
 
-          user = User.new(user_params)
-          
-          if user.save
-            Rails.logger.info "User created: '#{user.name}' (ID: #{user.id}, Email: #{user.email})"
-            render_user_success(user, :created)
-          else
-            handle_unprocessable_entity(user.errors.full_messages)
-          end
-        rescue StandardError => e
-          handle_internal_error("Failed to create user: #{e.message}")
+        user = User.new(user_params)
+
+        if user.save
+          Rails.logger.info "User created: '#{user.name}' (ID: #{user.id}, Email: #{user.email})"
+          render_user_success(user, :created)
+        else
+          handle_unprocessable_entity(user.errors.full_messages)
         end
+      rescue ActionController::ParameterMissing => e
+        # ApplicationControllerでrescue_fromしているのでここで何もしない（400で返る）
+        raise
+      rescue StandardError => e
+        handle_internal_error("Failed to create user: #{e.message}")
       end
 
       # PATCH/PUT /api/v1/users/:id
