@@ -1,6 +1,6 @@
-
 require 'rails_helper'
 
+# 
 RSpec.describe 'Users API', type: :request do
   let(:auth_headers) { { 'Authorization' => 'Bearer test_admin_taro' } }
   let(:invalid_headers) { { 'Authorization' => 'Bearer invalid_token' } }
@@ -22,6 +22,16 @@ RSpec.describe 'Users API', type: :request do
     end
   end
 
+  shared_examples 'user json' do |name, email, account_type|
+    it 'returns correct user json' do
+      subject
+      expect(response).to have_http_status(200)
+      expect(json_response['data']['attributes']['name']).to eq(name)
+      expect(json_response['data']['attributes']['email']).to eq(email)
+      expect(json_response['data']['attributes']['account_type']).to eq(account_type) if account_type
+    end
+  end
+
   describe 'GET /api/v1/users' do
     subject { get '/api/v1/users', headers: headers }
 
@@ -37,14 +47,7 @@ RSpec.describe 'Users API', type: :request do
 
     context 'with valid auth' do
       let(:headers) { auth_headers }
-      it 'returns 200 and user info' do
-        subject
-        expect(response).to have_http_status(200)
-        expect(response.content_type).to match(a_string_including('application/json'))
-        expect(json_response['data']['attributes']['name']).to eq('Test Admin')
-        expect(json_response['data']['attributes']['email']).to eq('admin@example.com')
-        expect(json_response['data']['attributes']['account_type']).to eq('admin')
-      end
+      include_examples 'user json', 'Test Admin', 'admin@example.com', 'admin'
     end
   end
 
@@ -73,9 +76,9 @@ RSpec.describe 'Users API', type: :request do
 
     context 'with invalid email' do
       let(:params) { valid_params.deep_dup.tap { |p| p[:user][:email] = 'invalid-email' } }
-      it 'returns 422' do
+      include_examples 'status and message', 422, nil
+      it 'returns error message' do
         subject
-        expect(response).to have_http_status(422)
         expect(json_response['errors']).to include('Email is invalid')
       end
     end
@@ -83,14 +86,13 @@ RSpec.describe 'Users API', type: :request do
     context 'with duplicate email' do
       let(:params) { valid_params.deep_dup.tap { |p| p[:user][:email] = 'duplicate@example.com' } }
       before { create(:user, email: 'duplicate@example.com') }
-      it 'returns 422' do
+      include_examples 'status and message', 422, nil
+      it 'returns error message' do
         subject
-        expect(response).to have_http_status(422)
         expect(json_response['errors']).to include('Email already exists')
       end
     end
 
-    # 異常系：必須パラメータ欠如
     context 'with missing params' do
       let(:params) { {} }
       include_examples 'status and message', 400, 'Required parameter missing: user'
@@ -103,12 +105,7 @@ RSpec.describe 'Users API', type: :request do
     context 'with valid auth accessing own info' do
       let(:user_id) { test_user.id }
       let(:headers) { auth_headers }
-      it 'returns user info' do
-        subject
-        expect(response).to have_http_status(200)
-        expect(json_response['data']['attributes']['name']).to eq('Test Admin')
-        expect(json_response['data']['attributes']['email']).to eq('admin@example.com')
-      end
+      include_examples 'user json', 'Test Admin', 'admin@example.com', nil
     end
 
     context 'accessing other users info' do
@@ -168,9 +165,9 @@ RSpec.describe 'Users API', type: :request do
       let(:user_id) { test_user.id }
       let(:params) { { user: { email: 'invalid-email' } } }
       let(:headers) { auth_headers }
-      it 'returns 422 with invalid email' do
+      include_examples 'status and message', 422, nil
+      it 'returns error message' do
         subject
-        expect(response).to have_http_status(422)
         expect(json_response['errors']).to include('Email is invalid')
       end
     end
