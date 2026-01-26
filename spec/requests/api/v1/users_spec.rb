@@ -6,13 +6,7 @@ RSpec.describe 'Users API', type: :request do
   let(:json_response) { JSON.parse(response.body) }
 
   # テスト用ユーザー作成
-  let!(:test_user) do
-    User.find_or_create_by!(google_sub: '1234567890abcde') do |user|
-      user.name = 'Test Admin'
-      user.email = 'admin@example.com'
-      user.account_type = 'admin'
-    end
-  end
+  let!(:test_user) { create(:user, google_sub: '1234567890abcde', name: 'Test Admin', email: 'admin@example.com', account_type: 'admin') }
 
   # 共通処理（エラー時のレスポンス検証）
   shared_examples 'status and message' do |status, message|
@@ -49,7 +43,7 @@ RSpec.describe 'Users API', type: :request do
       include_examples 'status and message', 401, 'Invalid or expired authentication token'
     end
 
-    # 異常系：有効なトークンでアクセス
+    # 正常系：有効なトークンでアクセス
     context 'with valid auth' do
       let(:headers) { auth_headers }
       include_examples 'user json', 'Test Admin', 'admin@example.com', 'admin'
@@ -69,7 +63,7 @@ RSpec.describe 'Users API', type: :request do
       }
     end
 
-    subject { post '/api/v1/users', params: params, headers: headers }
+    subject { post '/api/v1/users', params: params }
 
     # 正常系：有効なパラメータでユーザー作成
     context 'with valid params' do
