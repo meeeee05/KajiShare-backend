@@ -12,11 +12,13 @@ RSpec.describe "Api::V1::Tasks", type: :request do
   let!(:member_membership) { create(:membership, user: user, group: group, role: 'member', active: true) }
   let!(:task) { create(:task, group: group) }
 
+  # 共通処理：認証ユーザーを作成
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
     allow_any_instance_of(Api::V1::TasksController).to receive(:authenticate_user!).and_return(true)
   end
 
+  # 共通処理：アクセス制限
   shared_examples 'forbidden' do
     it { expect(response).to have_http_status(:forbidden) }
   end
