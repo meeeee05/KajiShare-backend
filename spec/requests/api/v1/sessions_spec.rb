@@ -14,11 +14,21 @@ RSpec.describe "Api::V1::Sessions", type: :request do
         "picture" => "https://example.com/avatar.jpg"
       }
     end
+    let(:json) { JSON.parse(response.body) }
+
+    shared_examples 'unauthorized' do |msg|
+      it do
+        subject
+        expect(response).to have_http_status(:unauthorized)
+        expect(json["error"]).to eq(msg)
+      end
+    end
 
     before do
-      # Mock Google::Auth::IDTokens.verify_oidc
       allow(Google::Auth::IDTokens).to receive(:verify_oidc).and_call_original
     end
+
+    subject { post "/api/v1/auth/google", headers: headers }
 
     context "with valid Google ID token" do
       before do
@@ -28,28 +38,21 @@ RSpec.describe "Api::V1::Sessions", type: :request do
       end
 
       context "when user is new" do
+        let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
         it "creates new user and returns success" do
-          post "/api/v1/auth/google",
-               headers: { "Authorization" => "Bearer #{valid_token}" }
-          
+          subject
           expect(response).to have_http_status(:ok)
-          
-          json_response = JSON.parse(response.body)
-          expect(json_response["success"]).to be true
-          expect(json_response["message"]).to eq("Login successful")
-          
-          # ユーザーが作成されたことを確認
+          expect(json["success"]).to be true
+          expect(json["message"]).to eq("Login successful")
           user = User.find_by(google_sub: "12345")
           expect(user).to be_present
           expect(user.email).to eq("test@example.com")
           expect(user.name).to eq("Test User")
           expect(user.account_type).to eq("user")
           expect(user.picture).to eq("https://example.com/avatar.jpg")
-          
-          # レスポンスデータの確認
-          expect(json_response["data"]["user"]["email"]).to eq("test@example.com")
-          expect(json_response["data"]["user"]["name"]).to eq("Test User")
-          expect(json_response["data"]["user"]["google_sub"]).to eq("12345")
+          expect(json["data"]["user"]["email"]).to eq("test@example.com")
+          expect(json["data"]["user"]["name"]).to eq("Test User")
+          expect(json["data"]["user"]["google_sub"]).to eq("12345")
         end
       end
 
@@ -62,108 +65,63 @@ RSpec.describe "Api::V1::Sessions", type: :request do
             account_type: "user"
           )
         end
-
+        let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
         it "finds existing user and returns success" do
           expect {
-            post "/api/v1/auth/google",
-                 headers: { "Authorization" => "Bearer #{valid_token}" }
+            subject
           }.not_to change(User, :count)
-
           expect(response).to have_http_status(:ok)
-          
-          json_response = JSON.parse(response.body)
-          expect(json_response["success"]).to be true
-          expect(json_response["data"]["user"]["id"]).to eq(existing_user.id)
-          # 既存ユーザーの情報は更新されない
-          expect(json_response["data"]["user"]["email"]).to eq("old@example.com")
-          expect(json_response["data"]["user"]["name"]).to eq("Old Name")
+          expect(json["success"]).to be true
+          expect(json["data"]["user"]["id"]).to eq(existing_user.id)
+          expect(json["data"]["user"]["email"]).to eq("old@example.com")
+          expect(json["data"]["user"]["name"]).to eq("Old Name")
         end
       end
     end
 
     context "with invalid Google ID token" do
+      let(:headers) { { "Authorization" => "Bearer #{invalid_token}" } }
       before do
         allow(Google::Auth::IDTokens).to receive(:verify_oidc)
           .with(invalid_token, aud: ENV["GOOGLE_CLIENT_ID"])
           .and_raise(Google::Auth::IDTokens::VerificationError.new("Invalid token"))
       end
-
-      it "returns unauthorized status" do
-        post "/api/v1/auth/google",
-             headers: { "Authorization" => "Bearer #{invalid_token}" }
-
-        expect(response).to have_http_status(:unauthorized)
-        
-        json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Invalid ID token")
-      end
+      include_examples 'unauthorized', "Invalid ID token"
     end
 
     context "without Authorization header" do
-      it "returns unauthorized status" do
-        post "/api/v1/auth/google"
-
-        expect(response).to have_http_status(:unauthorized)
-        
-        json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Unauthorized")
-      end
+      let(:headers) { nil }
+      include_examples 'unauthorized', "Unauthorized"
     end
 
     context "with malformed Authorization header" do
-      it "returns unauthorized status when not Bearer token" do
-        post "/api/v1/auth/google",
-             headers: { "Authorization" => "Basic #{valid_token}" }
-
-        expect(response).to have_http_status(:unauthorized)
-        
-        json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Unauthorized")
+      context "not Bearer token" do
+        let(:headers) { { "Authorization" => "Basic #{valid_token}" } }
+        include_examples 'unauthorized', "Unauthorized"
       end
-
-      it "returns unauthorized status when no token provided" do
-        post "/api/v1/auth/google",
-             headers: { "Authorization" => "Bearer " }
-
-        expect(response).to have_http_status(:unauthorized)
-        
-        json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Invalid ID token")
+      context "no token provided" do
+        let(:headers) { { "Authorization" => "Bearer " } }
+        include_examples 'unauthorized', "Invalid ID token"
       end
     end
 
     context "when Google Auth service fails" do
+      let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
       before do
         allow(Google::Auth::IDTokens).to receive(:verify_oidc)
           .and_raise(StandardError.new("Service unavailable"))
       end
-
-      it "handles service errors gracefully" do
-        post "/api/v1/auth/google",
-             headers: { "Authorization" => "Bearer #{valid_token}" }
-
-        expect(response).to have_http_status(:unauthorized)
-        
-        json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Invalid ID token")
-      end
+      include_examples 'unauthorized', "Invalid ID token"
     end
 
     context "with Google ID token missing sub field" do
+      let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
       before do
         allow(Google::Auth::IDTokens).to receive(:verify_oidc)
           .with(valid_token, aud: ENV["GOOGLE_CLIENT_ID"])
           .and_return(mock_payload.merge("sub" => nil))
       end
-
-      it "returns unauthorized if sub is missing" do
-        post "/api/v1/auth/google",
-             headers: { "Authorization" => "Bearer #{valid_token}" }
-
-        expect(response).to have_http_status(:unauthorized)
-        json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Invalid ID token")
-      end
+      include_examples 'unauthorized', "Invalid ID token"
     end
   end
 end
