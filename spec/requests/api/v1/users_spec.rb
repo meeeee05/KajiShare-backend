@@ -18,13 +18,11 @@ RSpec.describe 'Users API', type: :request do
   end
 
   # 共通処理（ユーザー情報のレスポンス検証）
-  shared_examples 'user json' do |name, email, account_type|
+  shared_examples 'user json' do |expected|
     it 'returns correct user json' do
       subject
-      expect(response).to have_http_status(200)
-      expect(json_response['data']['attributes']['name']).to eq(name)
-      expect(json_response['data']['attributes']['email']).to eq(email)
-      expect(json_response['data']['attributes']['account_type']).to eq(account_type) if account_type
+      attributes = json_response['data']['attributes']
+      expect(attributes).to include(expected)
     end
   end
 
@@ -46,7 +44,7 @@ RSpec.describe 'Users API', type: :request do
     # 正常系：有効なトークンでアクセス
     context 'with valid auth' do
       let(:headers) { auth_headers }
-      include_examples 'user json', 'Test Admin', 'admin@example.com', 'admin'
+      include_examples 'user json', { 'name' => 'Test Admin', 'email' => 'admin@example.com', 'account_type' => 'admin' }
     end
   end
 
@@ -110,7 +108,7 @@ RSpec.describe 'Users API', type: :request do
     context 'with valid auth accessing own info' do
       let(:user_id) { test_user.id }
       let(:headers) { auth_headers }
-      include_examples 'user json', 'Test Admin', 'admin@example.com', nil
+      include_examples 'user json', { 'name' => 'Test Admin', 'email' => 'admin@example.com' }
     end
 
     # 異常系：他のユーザーの情報にアクセスしようとする

@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 require 'rails_helper'
 
-def json
-  JSON.parse(response.body)
-end
+let(:json_response) { JSON.parse(response.body) }
 
 RSpec.describe "Api::V1::Assignments", type: :request do
   let!(:group) { create(:group) }
@@ -28,8 +26,8 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       it do
         subject
         expect(response).to have_http_status(:ok)
-        expect(json["data"]).to be_an(Array)
-        expect(json["data"].first["id"].to_i).to eq(assignment.id)
+        expect(json_response["data"]).to be_an(Array)
+        expect(json_response["data"].first["id"].to_i).to eq(assignment.id)
       end
     end
 
@@ -67,7 +65,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       it do
         subject
         expect(response).to have_http_status(:ok)
-        expect(json["data"]["id"].to_i).to eq(assignment.id)
+        expect(json_response["data"]["id"].to_i).to eq(assignment.id)
       end
     end
     context "when assignment does not exist" do
@@ -110,7 +108,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
         allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(another_user)
         expect { post "/api/v1/tasks/#{task.id}/assignments", params: valid_params, headers: headers }.to change(Assignment, :count).by(1)
         expect(response).to have_http_status(:created)
-        expect(json["data"]["attributes"]["comment"]).to eq("test")
+        expect(json_response["data"]["attributes"]["comment"]).to eq("test")
       end
     end
 
@@ -120,7 +118,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       it do
         subject
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(json["errors"]).to be_present
+        expect(json_response["errors"]).to be_present
       end
     end
 
@@ -163,7 +161,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       it do
         subject
         expect(response).to have_http_status(:ok)
-        expect(json["data"]["attributes"]["comment"]).to eq("updated")
+        expect(json_response["data"]["attributes"]["comment"]).to eq("updated")
       end
     end
     context "when assignment does not exist" do
@@ -201,7 +199,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       it do
         expect { subject }.to change(Assignment, :count).by(-1)
         expect(response).to have_http_status(:ok)
-        expect(json["message"]).to include("successfully deleted")
+        expect(json_response["message"]).to include("successfully deleted")
       end
     end
     context "when not admin" do
