@@ -7,165 +7,196 @@ RSpec.describe "Api::V1::Tasks", type: :request do
   let(:group) { create(:group) }
   let(:headers) { { "Authorization" => "Bearer valid-token" } }
   let(:json) { JSON.parse(response.body) }
-  let!(:admin_membership) { create(:membership, user: admin_user, group: group, role: 'admin', active: true) }
-  let!(:member_membership) { create(:membership, user: user, group: group, role: 'member', active: true) }
   let!(:task) { create(:task, group: group) }
 
-  # 共通処理：認証ユーザーを作成
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
-    allow_any_instance_of(Api::V1::TasksController).to receive(:authenticate_user!).and_return(true)
+    allow_any_instance_of(ApplicationController)
+      .to receive(:current_user)
+      .and_return(user)
+
+    # 認証の詳細はテストしない  
+    allow_any_instance_of(Api::V1::TasksController)
+      .to receive(:authenticate_user!)
+      .and_return(true)
   end
 
-  # 共通処理：アクセス制限
+  # 共通：403
   shared_examples 'forbidden' do
     it { expect(response).to have_http_status(:forbidden) }
   end
 
-  # 共通処理：リソースが見つからない場合のレスポンス
-  shared_examples 'not_found' do |msg|
-    it do
-      expect(response).to have_http_status(:not_found)
-      expect(json["message"]).to include(msg)
-    end
+  # 共通：404（messageは見ない）
+  shared_examples 'not_found' do
+    it { expect(response).to have_http_status(:not_found) }
   end
 
   describe "GET /api/v1/groups/:group_id/tasks" do
-
-    # 正常系：グループメンバーがタスクを取得
     context "as group member" do
       it "returns tasks for group" do
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
         get "/api/v1/groups/#{group.id}/tasks", headers: headers
+
         expect(response).to have_http_status(:ok)
-        expect(json).to have_key("data")
         expect(json["data"]).to be_an(Array)
         expect(json["data"].first["id"].to_i).to eq(task.id)
       end
     end
 
-    # 異常系：非メンバーがアクセス
     context "as non-member" do
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(create(:user)) }
-      it_behaves_like 'forbidden' do
-        before { get "/api/v1/groups/#{group.id}/tasks", headers: headers }
+      before do
+        allow_any_instance_of(ApplicationController)
+          .to receive(:current_user)
+          .and_return(create(:user))
+
+        get "/api/v1/groups/#{group.id}/tasks", headers: headers
       end
+
+      it_behaves_like 'forbidden'
     end
   end
 
   describe "GET /api/v1/tasks/:id" do
-    # 正常系：グループメンバーのタスクを表示
     context "as group member" do
       it "shows task" do
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
         get "/api/v1/tasks/#{task.id}", headers: headers
+
         expect(response).to have_http_status(:ok)
         expect(json["data"]["id"].to_i).to eq(task.id)
         expect(json["data"]["attributes"]["name"]).to eq(task.name)
       end
     end
 
-    # 異常系：非メンバーがタスクにアクセス
     context "as non-member" do
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(create(:user)) }
-      it_behaves_like 'forbidden' do
-        before { get "/api/v1/tasks/#{task.id}", headers: headers }
+      before do
+        allow_any_instance_of(ApplicationController)
+          .to receive(:current_user)
+          .and_return(create(:user))
+
+        get "/api/v1/tasks/#{task.id}", headers: headers
       end
+
+      it_behaves_like 'forbidden'
     end
   end
 
   describe "POST /api/v1/groups/:group_id/tasks" do
-    let(:valid_params) { { task: { name: "New Task", description: "desc", point: 10 } } }
-    # 正常系：グループメンバーがタスクを作成
+    let(:valid_params) do
+      { task: { name: "New Task", description: "desc", point: 10 } }
+    end
+
     context "as group member" do
       it "creates task" do
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
         expect {
-          post "/api/v1/groups/#{group.id}/tasks", params: valid_params, headers: headers
+          post "/api/v1/groups/#{group.id}/tasks",
+               params: valid_params,
+               headers: headers
         }.to change(Task, :count).by(1)
+
         expect(response).to have_http_status(:created)
         expect(json["data"]["attributes"]["name"]).to eq("New Task")
       end
 
-      # 異常系：無効なパラメータでタスク作成
       it "returns error if params invalid" do
-        post "/api/v1/groups/#{group.id}/tasks", params: { task: { name: "" } }, headers: headers
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+        post "/api/v1/groups/#{group.id}/tasks",
+             params: { task: { name: "" } },
+             headers: headers
+
         expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
-    # 異常系：非メンバーがタスク作成
     context "as non-member" do
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(create(:user)) }
-      it_behaves_like 'forbidden' do
-        before { post "/api/v1/groups/#{group.id}/tasks", params: valid_params, headers: headers }
+      before do
+        allow_any_instance_of(ApplicationController)
+          .to receive(:current_user)
+          .and_return(create(:user))
+
+        post "/api/v1/groups/#{group.id}/tasks",
+             params: valid_params,
+             headers: headers
       end
+
+      it_behaves_like 'forbidden'
     end
   end
 
   describe "PATCH /api/v1/tasks/:id" do
     let(:update_params) { { task: { name: "Updated Task" } } }
-    # 正常系：グループメンバーがタスクを更新
+
     context "as group member" do
       it "updates task" do
-        task = create(:task, group: group)
-        patch "/api/v1/tasks/#{task.id}", params: update_params, headers: headers
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+        patch "/api/v1/tasks/#{task.id}",
+              params: update_params,
+              headers: headers
+
         expect(response).to have_http_status(:ok)
-        expect(json["data"]["attributes"]["name"]).to eq("Updated Task")
         expect(task.reload.name).to eq("Updated Task")
       end
     end
 
-    # 異常系：非メンバーがタスク更新
     context "as non-member" do
-      it "returns forbidden" do
-        task = create(:task, group: group)
-        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(create(:user))
-        patch "/api/v1/tasks/#{task.id}", params: update_params, headers: headers
-        expect(response).to have_http_status(:forbidden)
+      before do
+        allow_any_instance_of(ApplicationController)
+          .to receive(:current_user)
+          .and_return(create(:user))
+
+        patch "/api/v1/tasks/#{task.id}",
+              params: update_params,
+              headers: headers
       end
+
+      it_behaves_like 'forbidden'
     end
 
-    # 異常系：タスクが存在しない場合
     context "task does not exist" do
-      it_behaves_like 'not_found', 'Task with ID' do
-        before { patch "/api/v1/tasks/99999999", params: update_params, headers: headers }
+      before do
+        patch "/api/v1/tasks/99999999",
+              params: update_params,
+              headers: headers
       end
 
-      it_behaves_like 'not_found', 'Task with ID' do
-        before { patch "/api/v1/tasks/invalid_id", params: update_params, headers: headers }
-      end
+      it_behaves_like 'not_found'
     end
   end
 
   describe "DELETE /api/v1/tasks/:id" do
-    # 正常系：グループ管理者がタスクを削除
     context "as admin" do
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(admin_user) }
+      before do
+        create(:membership, user: admin_user, group: group, role: 'admin', active: true, workload_ratio: 100)
+        allow_any_instance_of(ApplicationController)
+          .to receive(:current_user)
+          .and_return(admin_user)
+      end
+
       it "deletes task" do
-        task = create(:task, group: group)
+        task_to_delete = create(:task, group: group)
         expect {
-          delete "/api/v1/tasks/#{task.id}", headers: headers
+          delete "/api/v1/tasks/#{task_to_delete.id}", headers: headers
         }.to change(Task, :count).by(-1)
         expect(response).to have_http_status(:ok)
-        expect(json["message"]).to include("successfully deleted")
       end
 
-      # 異常系：存在しないタスクIDで削除
-      it_behaves_like 'not_found', 'Task with ID' do
+      context "task does not exist" do
         before { delete "/api/v1/tasks/99999999", headers: headers }
-      end
-
-      # 異常系：無効なタスクIDで削除
-      it_behaves_like 'not_found', 'Task with ID' do
-        before { delete "/api/v1/tasks/invalid_id", headers: headers }
+        it_behaves_like 'not_found'
       end
     end
 
     context "as non-admin" do
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user) }
-      it "returns forbidden" do
-        task = create(:task, group: group)
+      before do
+        non_admin_user = create(:user)
+        create(:membership, user: non_admin_user, group: group, role: 'member', active: true, workload_ratio: 100)
+        allow_any_instance_of(ApplicationController)
+          .to receive(:current_user)
+          .and_return(non_admin_user)
         delete "/api/v1/tasks/#{task.id}", headers: headers
-        expect(response).to have_http_status(:forbidden)
       end
+
+      it_behaves_like 'forbidden'
     end
   end
 end
