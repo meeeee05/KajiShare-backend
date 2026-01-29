@@ -4,11 +4,10 @@ RSpec.describe 'Users API', type: :request do
   let(:auth_headers) { { 'Authorization' => 'Bearer test_admin_taro' } }
   let(:invalid_headers) { { 'Authorization' => 'Bearer invalid_token' } }
   let(:json_response) { JSON.parse(response.body) }
-
   # テスト用ユーザー作成
   let!(:test_user) { create(:user, google_sub: '1234567890abcde', name: 'Test Admin', email: 'admin@example.com', account_type: 'admin') }
 
-  # 共通処理（エラー時のレスポンス検証）
+  # 共通処理：エラー時のレスポンス検証
   shared_examples 'status and message' do |status, message|
     it "returns #{status} and message" do
       subject
@@ -17,7 +16,7 @@ RSpec.describe 'Users API', type: :request do
     end
   end
 
-  # 共通処理（ユーザー情報のレスポンス検証）
+  # 共通処理：ユーザー情報のレスポンス検証
   shared_examples 'user json' do |expected|
     it 'returns correct user json' do
       subject
@@ -28,7 +27,6 @@ RSpec.describe 'Users API', type: :request do
 
   describe 'GET /api/v1/users' do
     subject { get '/api/v1/users', headers: headers }
-
     # 異常系：認証ヘッダーなしでアクセス
     context 'without auth' do
       let(:headers) { {} }
@@ -103,7 +101,6 @@ RSpec.describe 'Users API', type: :request do
 
   describe 'GET /api/v1/users/:id' do
     subject { get "/api/v1/users/#{user_id}", headers: headers }
-
     # 正常系：有効な認証情報で自身の情報にアクセスできる
     context 'with valid auth accessing own info' do
       let(:user_id) { test_user.id }

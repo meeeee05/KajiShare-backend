@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 require 'rails_helper'
 
 RSpec.describe "Api::V1::Sessions", type: :request do
@@ -16,6 +15,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
     end
     let(:json) { JSON.parse(response.body) }
 
+    
     shared_examples 'unauthorized' do |msg|
       it do
         subject

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'rails_helper'
-
 let(:json_response) { JSON.parse(response.body) }
 
 RSpec.describe "Api::V1::Assignments", type: :request do
@@ -8,7 +7,6 @@ RSpec.describe "Api::V1::Assignments", type: :request do
   let!(:user) { create(:user) }
   let!(:admin_user) { create(:user) }
   let!(:member_membership) { create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100) }
-  # admin_membershipは必要なテスト内で個別に作成
   let!(:task) { create(:task, group: group) }
   let!(:assignment) { create(:assignment, task: task, membership: member_membership) }
   let(:headers) { { "Authorization" => "Bearer valid-token" } }
@@ -20,7 +18,6 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
   describe "GET /api/v1/tasks/:task_id/assignments" do
     subject { get "/api/v1/tasks/#{task_id}/assignments", headers: headers }
-
     context "when user is member" do
       let(:task_id) { task.id }
       it do
@@ -60,6 +57,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
   describe "GET /api/v1/assignments/:id" do
     subject { get "/api/v1/assignments/#{assignment_id}", headers: headers }
 
+    
     context "when user is group member" do
       let(:assignment_id) { assignment.id }
       it do
