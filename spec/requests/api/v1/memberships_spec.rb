@@ -1,18 +1,26 @@
 # frozen_string_literal: true
-
 require 'rails_helper'
 
 RSpec.describe "Api::V1::Memberships", type: :request do
   let!(:group) { create(:group) }
   let!(:admin_user) { create(:user) }
-  let!(:admin_membership) { create(:membership, user: admin_user, group: group, role: 'admin', active: true) }
   let!(:user) { create(:user) }
-  let!(:member_membership) { create(:membership, user: user, group: group, role: 'member', active: true) }
+  let!(:admin_membership) { create(:membership, user: admin_user, group: group, role: 'admin', active: true, workload_ratio: 50) }
+  let!(:member_membership) { create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 50) }
   let(:headers) { { "Authorization" => "Bearer valid-token" } }
 
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(admin_user)
     allow_any_instance_of(Api::V1::MembershipsController).to receive(:authenticate_user!).and_return(true)
+  end
+
+  shared_examples 'not_found_membership' do
+    it 'returns 404 with message' do
+      subject
+      expect(response).to have_http_status(:not_found)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to include("Membership with ID")
+    end
   end
 
   describe "GET /api/v1/memberships" do
@@ -47,18 +55,14 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
-    it "returns 404 if membership does not exist" do
-      get "/api/v1/memberships/99999999", headers: headers
-      expect(response).to have_http_status(:not_found)
-      json = JSON.parse(response.body)
-      expect(json["message"]).to include("Membership with ID")
+    context "when membership does not exist" do
+      subject { get "/api/v1/memberships/99999999", headers: headers }
+      include_examples 'not_found_membership'
     end
 
-    it "returns 404 with invalid id format" do
-      get "/api/v1/memberships/invalid_id", headers: headers
-      expect(response).to have_http_status(:not_found)
-      json = JSON.parse(response.body)
-      expect(json["message"]).to include("Membership with ID")
+    context "with invalid id format" do
+      subject { get "/api/v1/memberships/invalid_id", headers: headers }
+      include_examples 'not_found_membership'
     end
   end
 
@@ -71,7 +75,6 @@ RSpec.describe "Api::V1::Memberships", type: :request do
     it "creates membership as admin" do
       expect {
         post "/api/v1/memberships", params: valid_params, headers: headers
-        puts response.body
       }.to change(Membership, :count).by(1)
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)
@@ -97,11 +100,9 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       expect(member_membership.reload.active).to be false
     end
 
-    it "returns 404 if membership does not exist" do
-      put "/api/v1/memberships/99999999", params: { membership: { active: false } }, headers: headers
-      expect(response).to have_http_status(:not_found)
-      json = JSON.parse(response.body)
-      expect(json["message"]).to include("Membership with ID")
+    context "when membership does not exist" do
+      subject { put "/api/v1/memberships/99999999", params: { membership: { active: false } }, headers: headers }
+      include_examples 'not_found_membership'
     end
 
     it "returns forbidden if not admin" do
@@ -127,11 +128,9 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
-    it "returns 404 if membership does not exist" do
-      delete "/api/v1/memberships/99999999", headers: headers
-      expect(response).to have_http_status(:not_found)
-      json = JSON.parse(response.body)
-      expect(json["message"]).to include("Membership with ID")
+    context "when membership does not exist" do
+      subject { delete "/api/v1/memberships/99999999", headers: headers }
+      include_examples 'not_found_membership'
     end
 
     it "returns forbidden if not admin" do
@@ -155,11 +154,9 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       expect(admin_membership.reload.role).to eq('admin')
     end
 
-    it "returns 404 if membership does not exist" do
-      patch "/api/v1/memberships/99999999/change_role", params: { role: 'admin' }, headers: headers
-      expect(response).to have_http_status(:not_found)
-      json = JSON.parse(response.body)
-      expect(json["message"]).to include("Membership with ID")
+    context "when membership does not exist" do
+      subject { patch "/api/v1/memberships/99999999/change_role", params: { role: 'admin' }, headers: headers }
+      include_examples 'not_found_membership'
     end
 
     it "returns forbidden if not admin" do

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require 'rails_helper'
-let(:json_response) { JSON.parse(response.body) }
 
 RSpec.describe "Api::V1::Assignments", type: :request do
+  let(:json_response) { JSON.parse(response.body) }
   let!(:group) { create(:group) }
   let!(:user) { create(:user) }
   let!(:admin_user) { create(:user) }
