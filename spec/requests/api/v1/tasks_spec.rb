@@ -82,7 +82,8 @@ RSpec.describe "Api::V1::Tasks", type: :request do
     end
   end
 
-    #current_userのスタブを解除
+  #current_userのスタブを解除
+  describe "Authentication" do
     before do
       allow_any_instance_of(Api::V1::TasksController)
         .to receive(:authenticate_user!)
