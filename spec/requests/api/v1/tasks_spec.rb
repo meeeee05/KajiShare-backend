@@ -1,4 +1,3 @@
-# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe "Api::V1::Tasks", type: :request do
@@ -83,6 +82,31 @@ RSpec.describe "Api::V1::Tasks", type: :request do
     end
   end
 
+    #current_userのスタブを解除
+    before do
+      allow_any_instance_of(Api::V1::TasksController)
+        .to receive(:authenticate_user!)
+        .and_call_original
+      allow_any_instance_of(ApplicationController)
+        .to receive(:current_user)
+        .and_call_original
+    end
+
+    # 異常系：Authorizationヘッダーが存在しない（index）
+    it "returns 401 for index without Authorization header" do
+      create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+      get "/api/v1/groups/#{group.id}/tasks"
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    # 異常系：Authorizationヘッダーが存在しない（create）
+    it "returns 401 for create without Authorization header" do
+      create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+      post "/api/v1/groups/#{group.id}/tasks", params: { task: { name: "X", description: "", point: 1 } }
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   describe "POST /api/v1/groups/:group_id/tasks" do
     # 正常系：グループメンバーとしてのアクセス
     let(:valid_params) do
@@ -130,6 +154,14 @@ RSpec.describe "Api::V1::Tasks", type: :request do
     end
   end
 
+  # 異常系：存在しないグループへのタスク作成
+  describe "POST /api/v1/groups/:group_id/tasks with nonexistent group" do
+    it "returns 404 when group does not exist" do
+      post "/api/v1/groups/99999999/tasks", params: { task: { name: "New", description: "", point: 1 } }, headers: headers
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "PATCH /api/v1/tasks/:id" do
     let(:update_params) { { task: { name: "Updated Task" } } }
     # 正常系：グループメンバーとしてのアクセス
@@ -172,8 +204,16 @@ RSpec.describe "Api::V1::Tasks", type: :request do
     end
   end
 
+  # 異常系：存在しないタスクへのアクセス
+  describe "GET /api/v1/tasks/:id not found" do
+    it "returns 404 when task does not exist" do
+      get "/api/v1/tasks/99999999", headers: headers
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  # 正常系：グループ管理者としてのアクセス
   describe "DELETE /api/v1/tasks/:id" do
-    # 正常系：グループ管理者としてのアクセス
     context "as admin" do
       before do
         create(:membership, user: admin_user, group: group, role: 'admin', active: true, workload_ratio: 100)
@@ -210,6 +250,22 @@ RSpec.describe "Api::V1::Tasks", type: :request do
       end
 
       it_behaves_like 'forbidden'
+    end
+  end
+
+  # 異常系：バリデーションエラーのレスポンスが正しく機能することの確認
+  describe "POST /api/v1/groups/:group_id/tasks validation errors" do
+    it "returns 422 and detailed errors when point is 0" do
+      create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+      post "/api/v1/groups/#{group.id}/tasks",
+           params: { task: { name: "Bad", description: "", point: 0 } },
+           headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["error"]).to eq("Unprocessable Entity")
+      expect(json["message"]).to eq("Validation failed")
+      expect(json["errors"]).to be_an(Array)
+      expect(json["errors"]).to include("Point must be greater than 0")
     end
   end
 end

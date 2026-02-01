@@ -4,7 +4,6 @@ RSpec.describe 'Users API', type: :request do
   let(:auth_headers) { { 'Authorization' => 'Bearer test_admin_taro' } }
   let(:invalid_headers) { { 'Authorization' => 'Bearer invalid_token' } }
   let(:json_response) { JSON.parse(response.body) }
-  # テスト用ユーザー作成
   let!(:test_user) { create(:user, google_sub: '1234567890abcde', name: 'Test Admin', email: 'admin@example.com', account_type: 'admin') }
 
   # 共通処理：エラー時のレスポンス検証
@@ -97,6 +96,17 @@ RSpec.describe 'Users API', type: :request do
       let(:params) { {} }
       include_examples 'status and message', 400, 'Required parameter missing: user'
     end
+
+    # 異常系：重複したgoogle_subでユーザー作成
+    context 'with duplicate google_sub' do
+      let(:params) { valid_params.deep_dup.tap { |p| p[:user][:google_sub] = 'dup-google-sub' } }
+      before { create(:user, google_sub: 'dup-google-sub') }
+      include_examples 'status and message', 422, nil
+      it 'returns error message' do
+        subject
+        expect(json_response['errors']).to include('Google account already registered')
+      end
+    end
   end
 
   describe 'GET /api/v1/users/:id' do
@@ -113,7 +123,6 @@ RSpec.describe 'Users API', type: :request do
       let(:other_user) { create(:user, email: 'other@example.com', google_sub: 'other123') }
       let(:user_id) { other_user.id }
       let(:headers) { auth_headers }
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user) }
       include_examples 'status and message', 403, 'You can only access your own user information'
     end
 
@@ -193,7 +202,6 @@ RSpec.describe 'Users API', type: :request do
       let(:user_id) { other_user.id }
       let(:params) { update_params }
       let(:headers) { auth_headers }
-      before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(test_user) }
       include_examples 'status and message', 403, 'You can only update your own user information'
     end
   end
