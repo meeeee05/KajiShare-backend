@@ -7,6 +7,7 @@ KajiShare API
 ⸻
 
 < 特徴・設計方針 >
+
 • API専用（Rails API mode）
 • JWT（Bearer Token）による認証
 • 権限管理（admin / member）
@@ -17,6 +18,7 @@ KajiShare API
 ⸻
 
 < 主な機能 >
+
 • Google認証によるユーザー管理
 • グループ・タスク・アサインメント・評価のRESTful API
 • 権限（admin/member）・ワークロード比率管理
@@ -25,6 +27,7 @@ KajiShare API
 ⸻
 
 < 技術スタック >
+
 • Ruby 3.4.４
 • Rails 8.0.4（API mode）
 • PostgreSQL 14.19
@@ -36,13 +39,16 @@ KajiShare API
 ⸻
 
 < セットアップ手順 >
+
 必要環境
+
 • Ruby 3.4.４
 • Rails 8.0.4
 • PostgreSQL 14.19
 • Node.js（フロント連携時のみ）
 
 初期構築
+
 git clone <https://github.com/meeeee05/KajiShare-backend>
 cd KajiShare-backend
 bundle install
@@ -52,6 +58,7 @@ rails s
 ⸻
 
 < 認証について >
+
 本APIは JWT（Bearer Token）認証 を採用しています。
 
 Google OAuth 認証に成功すると、バックエンドからJWTトークンを発行します。
@@ -61,6 +68,7 @@ Authorization: Bearer <token>
 ⸻
 
 < APIエンドポイント（一部）>
+
 • /api/v1/auth/google : Google認証
 • /api/v1/users : ユーザー管理
 • /api/v1/groups : グループ作成・参加・編集
@@ -72,6 +80,7 @@ Authorization: Bearer <token>
 ⸻
 
 < タスク作成例 >
+
 詳細は API_ENDPOINTS.md を参照
 
 POST /api/v1/groups/:group_id/tasks
@@ -87,6 +96,7 @@ POST /api/v1/groups/:group_id/tasks
 ⸻
 
 < テスト >
+
 RSpecによる自動テストを実装しています。
 
 bundle exec rspec
@@ -100,6 +110,7 @@ bundle exec rspec
 ⸻
 
 < ディレクトリ構成 >
+
 app/
   controllers/
   models/
