@@ -1,4 +1,3 @@
-# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe "Api::V1::Sessions", type: :request do
@@ -81,6 +80,74 @@ RSpec.describe "Api::V1::Sessions", type: :request do
           expect(json["data"]["user"]["name"]).to eq("Old Name")
         end
       end
+
+      # 正常系: picture欠如でも新規作成が成功し、pictureはnilになる
+      context "when picture is missing" do
+        let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
+        before do
+          allow(Google::Auth::IDTokens).to receive(:verify_oidc)
+            .with(valid_token, aud: ENV["GOOGLE_CLIENT_ID"])
+            .and_return(mock_payload.merge("picture" => nil))
+        end
+        it "creates user successfully with nil picture" do
+          expect { subject }.to change(User, :count).by(1)
+          expect(response).to have_http_status(:ok)
+          user = User.find_by(google_sub: "12345")
+          expect(user).to be_present
+          expect(user.picture).to be_nil
+          expect(json["success"]).to be true
+          expect(json["message"]).to eq("Login successful")
+        end
+      end
+
+      # 正常系: email欠如は既存ユーザーの値が維持される（新規作成はバリデーションで不可のため）
+      context "when email is missing for existing user" do
+        let!(:existing_user) do
+          create(:user,
+            google_sub: "12345",
+            email: "persist@example.com",
+            name: "Persisted Name",
+            account_type: "user"
+          )
+        end
+        let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
+        before do
+          allow(Google::Auth::IDTokens).to receive(:verify_oidc)
+            .with(valid_token, aud: ENV["GOOGLE_CLIENT_ID"])
+            .and_return(mock_payload.merge("email" => nil))
+        end
+        it "logs in and preserves existing email and name" do
+          expect { subject }.not_to change(User, :count)
+          expect(response).to have_http_status(:ok)
+          expect(json["data"]["user"]["id"]).to eq(existing_user.id)
+          expect(json["data"]["user"]["email"]).to eq("persist@example.com")
+          expect(json["data"]["user"]["name"]).to eq("Persisted Name")
+        end
+      end
+
+      # 正常系: name欠如は既存ユーザーの値が維持される
+      context "when name is missing for existing user" do
+        let!(:existing_user) do
+          create(:user,
+            google_sub: "12345",
+            email: "persist2@example.com",
+            name: "Persisted Name 2",
+            account_type: "user"
+          )
+        end
+        let(:headers) { { "Authorization" => "Bearer #{valid_token}" } }
+        before do
+          allow(Google::Auth::IDTokens).to receive(:verify_oidc)
+            .with(valid_token, aud: ENV["GOOGLE_CLIENT_ID"])
+            .and_return(mock_payload.merge("name" => nil))
+        end
+        it "logs in and preserves existing name and email" do
+          expect { subject }.not_to change(User, :count)
+          expect(response).to have_http_status(:ok)
+          expect(json["data"]["user"]["email"]).to eq("persist2@example.com")
+          expect(json["data"]["user"]["name"]).to eq("Persisted Name 2")
+        end
+      end
     end
 
     # 異常系：無効なGoogle IDトークンを使用
@@ -92,6 +159,12 @@ RSpec.describe "Api::V1::Sessions", type: :request do
           .and_raise(Google::Auth::IDTokens::VerificationError.new("Invalid token"))
       end
       include_examples 'unauthorized', "Invalid ID token"
+      # エラーメッセージのみを返し、メッセージは含まれないことを確認
+      it "returns only error without message for invalid token" do
+        subject
+        expect(json.keys).to eq(["error"])
+        expect(json["message"]).to be_nil
+      end
     end
 
     # 異常系：Authorizationヘッダーが存在しない
