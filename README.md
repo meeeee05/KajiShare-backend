@@ -55,7 +55,9 @@ rails s
 本APIは JWT（Bearer Token）認証 を採用しています。
 
 Google OAuth 認証に成功すると、バックエンドからJWTトークンを発行します。
+
 JWTトークンをAPIリクエストに付与してください。
+
 Authorization: Bearer <token>
 
 ## APIエンドポイント（一部）
@@ -123,40 +125,75 @@ db/
 ```mermaid
 erDiagram
     USERS {
-        int id
-        string name
-        string email
-    }
+    int id
+    string google_sub
+    string name
+    string email
+    string picture
+    string account_type
+    datetime created_at
+    datetime updated_at
+  }
 
-    GROUPS {
-        int id
-        string name
-    }
+  GROUPS {
+    int id
+    string name
+    string share_key
+    string assign_mode
+    string balance_type
+    boolean active
+    datetime created_at
+    datetime updated_at
+  }
 
-    MEMBERSHIPS {
-        int id
-        string role
-        int workload_ratio
-    }
+  MEMBERSHIPS {
+    int id
+    int user_id
+    int group_id
+    string role
+    float workload_ratio
+    boolean active
+    datetime created_at
+    datetime updated_at
+  }
 
-    TASKS {
-        int id
-        string name
-        int point
-    }
+  TASKS {
+    int id
+    int group_id
+    string name
+    int point
+    text description
+    datetime created_at
+    datetime updated_at
+  }
 
-    ASSIGNMENTS {
-        int id
-        string status
-    }
+  ASSIGNMENTS {
+    int id
+    int task_id
+    int membership_id
+    int assigned_to_id
+    int assigned_by_id
+    date due_date
+    date completed_date
+    string status
+    text comment
+    datetime created_at
+    datetime updated_at
+  }
 
-    EVALUATIONS {
-        int id
-        int score
-    }
+  EVALUATIONS {
+    int id
+    int assignment_id
+    int evaluator_id
+    int score
+    text feedback
+    datetime created_at
+    datetime updated_at
+  }
 
-    USERS ||--o{ MEMBERSHIPS : has
-    GROUPS ||--o{ MEMBERSHIPS : has
-    GROUPS ||--o{ TASKS : has
-    TASKS ||--o{ ASSIGNMENTS : has
-    ASSIGNMENTS ||--o{ EVALUATIONS : has
+  USERS ||--o{ MEMBERSHIPS : has
+  GROUPS ||--o{ MEMBERSHIPS : has
+  GROUPS ||--o{ TASKS : has
+  MEMBERSHIPS ||--o{ ASSIGNMENTS : has
+  TASKS ||--o{ ASSIGNMENTS : has
+  ASSIGNMENTS ||--o{ EVALUATIONS : has
