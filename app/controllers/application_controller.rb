@@ -31,7 +31,7 @@ class ApplicationController < ActionController::API
     
     # Bearer <token>形式チェック
     unless auth_header&.start_with?("Bearer ")
-      return handle_unauthorized("No authentication token provided")
+      return handle_unauthorized("認証トークンが提供されていません")
     end
     
     # Bearer部分を排除→トークンのみ抽出
@@ -47,11 +47,11 @@ class ApplicationController < ActionController::API
       when "test_nomember"
         @current_user = User.new(id: 999, google_sub: "nomember123")  #非メンバー
       else
-        return handle_unauthorized("Invalid test token")
+        return handle_unauthorized("無効なテストトークン")
       end
       
       unless @current_user&.persisted?
-        return handle_unauthorized("Test user not found in database")
+        return handle_unauthorized("テストユーザーがDBに存在しません")
       end
       
       return
@@ -67,11 +67,11 @@ class ApplicationController < ActionController::API
       @current_user = User.find_by(google_sub: sub)
       
       unless @current_user
-        return handle_unauthorized("User not found. Please register first.")
+        return handle_unauthorized("ユーザが見つかりません")
       end
     rescue StandardError => e
       Rails.logger.error "Token validation error: #{e.message}"
-      return handle_unauthorized("Invalid or expired authentication token")
+      return handle_unauthorized("初めからやり直してください")  #セキュリティ上、詳細なエラーは返さない
     end
   end
 
@@ -91,7 +91,7 @@ class ApplicationController < ActionController::API
     end
 
   # 401: Unauthorized
-  def handle_unauthorized(message = "Unauthorized access")
+  def handle_unauthorized(message = "アクセスが不正です")
     render json: { 
       error: "Unauthorized", 
       message: message,
@@ -100,7 +100,7 @@ class ApplicationController < ActionController::API
   end
 
   # 403: Forbidden
-  def handle_forbidden(message = "Access denied")
+  def handle_forbidden(message = "アクセスが拒否されました")
     render json: { 
       error: "Forbidden", 
       message: message,
@@ -130,7 +130,7 @@ class ApplicationController < ActionController::API
   def handle_unprocessable_entity(errors)
     render json: { 
       error: "Unprocessable Entity", 
-      message: "Validation failed",
+      message: "検証に失敗しました",
       errors: errors,
       status: 422
     }, status: :unprocessable_entity
@@ -154,7 +154,7 @@ class ApplicationController < ActionController::API
     
     render json: { 
       error: "Internal Server Error", 
-      message: Rails.env.production? ? "Something went wrong" : message,
+      message: Rails.env.production? ? "何か問題が発生しました" : message,
       status: 500
     }, status: :internal_server_error
   end
