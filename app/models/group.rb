@@ -6,6 +6,8 @@ class Group < ApplicationRecord
   has_many :assignments, through: :tasks, dependent: :destroy
   has_many :evaluations, through: :assignments, dependent: :destroy
 
+  before_validation :assign_share_key, on: :create
+
   # バリデーション
   validates :name,
             presence: true,
@@ -24,4 +26,16 @@ class Group < ApplicationRecord
             inclusion: { in: %w[point time] }
 
   # active は boolean 型なので inclusion バリデーションは不要
+
+  private
+
+  # 6文字のランダムな大小アルファベットで share_key を自動採番
+  def assign_share_key
+    return if share_key.present?
+
+    characters = [('A'..'Z'), ('a'..'z')].map(&:to_a).flatten
+    begin
+      self.share_key = Array.new(6) { characters.sample }.join
+    end while self.class.exists?(share_key: share_key)
+  end
 end
