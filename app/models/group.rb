@@ -18,12 +18,12 @@ class Group < ApplicationRecord
             uniqueness: true
 
   validates :assign_mode,
-            presence: true,
-            inclusion: { in: %w[equal ratio manual] }
+            inclusion: { in: %w[equal ratio manual] },
+            allow_nil: true
 
   validates :balance_type,
-            presence: true,
-            inclusion: { in: %w[point time] }
+            inclusion: { in: %w[point time] },
+            allow_nil: true
 
   # active は boolean 型なので inclusion バリデーションは不要
 
