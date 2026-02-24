@@ -7,7 +7,8 @@ Rails.application.routes.draw do
     namespace :v1 do
       post "auth/google", to: "sessions#google_auth"
 
-      resources :users, only: [:index, :show, :create, :update]
+      get "users/me", to: "users#index"
+      resources :users, only: [:index, :show, :create, :update, :destroy]
 
       resources :groups do
         resources :tasks, only: [:index, :create, :show, :update, :destroy]
