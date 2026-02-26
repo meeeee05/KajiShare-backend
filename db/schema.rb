@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_25_141417) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_26_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -47,6 +47,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_25_141417) do
     t.boolean "active"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "created_by_id"
+    t.index ["created_by_id"], name: "index_groups_on_created_by_id"
   end
 
   create_table "memberships", force: :cascade do |t|
@@ -84,6 +86,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_25_141417) do
   add_foreign_key "assignments", "memberships"
   add_foreign_key "assignments", "tasks"
   add_foreign_key "evaluations", "assignments"
+  add_foreign_key "groups", "users", column: "created_by_id"
   add_foreign_key "memberships", "groups"
   add_foreign_key "memberships", "users"
   add_foreign_key "tasks", "groups"

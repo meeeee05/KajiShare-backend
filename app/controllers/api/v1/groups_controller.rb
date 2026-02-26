@@ -19,16 +19,10 @@ class Api::V1::GroupsController < ApplicationController
 
   # POST /api/v1/groups - グループ作成
   def create
-    group = Group.new(group_params)
+    group = current_user.created_groups.build(group_params)
 
     ActiveRecord::Base.transaction do
       if group.save
-        # グループ作成者を自動的にAdminとして追加
-        membership = group.memberships.create!(
-          user: current_user,
-          role: "admin",
-          active: true
-        )
         Rails.logger.info "Group created: '#{group.name}' (ID: #{group.id}) by user #{current_user.name}"
         render_group_success(group, :created)
       else

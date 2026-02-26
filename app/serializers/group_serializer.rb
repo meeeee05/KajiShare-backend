@@ -1,5 +1,5 @@
 class GroupSerializer < ActiveModel::Serializer
-  attributes :id, :name, :share_key, :assign_mode, :balance_type, :active,
+  attributes :id, :name, :share_key, :assign_mode, :balance_type, :active, :created_by_id,
              :members_count, :admin_users, :member_users
 
   # 関連データの包含(関連するオブジェクトを自動でJSONに含める)
