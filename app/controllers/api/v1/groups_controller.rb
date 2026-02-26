@@ -19,10 +19,20 @@ class Api::V1::GroupsController < ApplicationController
 
   # POST /api/v1/groups - グループ作成
   def create
-    group = current_user.created_groups.build(group_params)
+    group = Group.new(group_params)
+    supports_created_by = Group.column_names.include?("created_by_id")
+    group.creator = current_user if supports_created_by
 
     ActiveRecord::Base.transaction do
       if group.save
+        # created_by_idがない環境向けのフォールバック
+        unless supports_created_by
+          group.memberships.find_or_create_by!(user: current_user) do |membership|
+            membership.role = "admin"
+            membership.active = true
+          end
+        end
+
         Rails.logger.info "Group created: '#{group.name}' (ID: #{group.id}) by user #{current_user.name}"
         render_group_success(group, :created)
       else

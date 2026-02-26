@@ -43,6 +43,7 @@ class Group < ApplicationRecord
 
   # 作成者が設定されている場合、作成者をAdminとしてグループに自動参加させる
   def ensure_creator_membership
+    return unless self.class.column_names.include?("created_by_id")
     return if creator.blank?
 
     memberships.find_or_create_by!(user: creator) do |membership|
