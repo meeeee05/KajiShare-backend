@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       post "auth/google", to: "sessions#google_auth"
+      post "groups/join", to: "memberships#create"
 
       get "users/me", to: "users#index"
       resources :users, only: [:index, :show, :create, :update, :destroy]

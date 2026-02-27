@@ -71,6 +71,12 @@ class ApplicationController < ActionController::API
       end
     rescue StandardError => e
       Rails.logger.error "Token validation error: #{e.message}"
+
+      # 期限切れトークンは再ログインを促す
+      if e.message.to_s.downcase.include?("expired")
+        return handle_unauthorized("セッションの有効期限が切れました。再ログインしてください。")
+      end
+
       return handle_unauthorized("初めからやり直してください")  #セキュリティ上、詳細なエラーは返さない
     end
   end

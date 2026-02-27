@@ -184,12 +184,12 @@ module Api
 
       # 招待コード(share_key)を使った参加リクエストか判定
       def join_by_share_key_request?
-        params.dig(:membership, :share_key).present?
+        extract_share_key.present?
       end
 
       # 招待コード(share_key)でグループ参加
       def join_group_by_share_key
-        share_key = params.dig(:membership, :share_key).to_s.strip
+        share_key = extract_share_key.to_s.strip
         group = Group.find_by(share_key: share_key)
 
         return render_share_key_error("招待コードが間違っています。再度ご確認ください。") if group.nil?
@@ -215,11 +215,15 @@ module Api
 
       def render_share_key_error(message)
         render json: {
-          error: "Unprocessable Entity",
+          error: message,
           message: message,
           errors: [message],
           status: 422
         }, status: :unprocessable_entity
+      end
+
+      def extract_share_key
+        params.dig(:membership, :share_key) || params.dig(:group, :share_key) || params[:share_key]
       end
     end
   end
