@@ -101,6 +101,28 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       post "/api/v1/memberships", params: valid_params, headers: headers
       expect(response).to have_http_status(:forbidden)
     end
+
+    # 異常系：share_keyで既に参加済みのグループに参加しようとした場合
+    it "returns already joined message for duplicate join by share_key" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+
+      post "/api/v1/memberships", params: { membership: { share_key: group.share_key } }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to eq("既に参加済みです。")
+    end
+
+    # 異常系：存在しないshare_keyで参加しようとした場合
+    it "returns invalid share_key message when code does not exist" do
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+
+      post "/api/v1/memberships", params: { membership: { share_key: "INVALID" } }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      json = JSON.parse(response.body)
+      expect(json["message"]).to eq("招待コードが間違っています。再度ご確認ください。")
+    end
   end
 
   describe "PUT /api/v1/memberships/:id" do

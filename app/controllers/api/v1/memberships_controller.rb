@@ -27,6 +27,10 @@ module Api
       # POST /api/v1/memberships - Admin権限で新規メンバーシップ作成
       def create
         begin
+          if join_by_share_key_request?
+            return join_group_by_share_key
+          end
+
           membership = Membership.new(membership_params)
           if membership.save
             Rails.logger.info "Membership created: User #{membership.user.name} joined Group #{membership.group.name} as #{membership.role} by admin #{current_user.name}"
@@ -137,6 +141,9 @@ module Api
 
       # Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
+        # share_key参加は認証済みユーザーなら実行可能（admin不要）
+        return if action_name == 'create' && join_by_share_key_request?
+
         group_id = get_group_id_for_action
         return handle_unprocessable_entity(["Group ID is required"]) if group_id.nil?
         
@@ -173,6 +180,46 @@ module Api
         else
           @membership&.group_id
         end
+      end
+
+      # 招待コード(share_key)を使った参加リクエストか判定
+      def join_by_share_key_request?
+        params.dig(:membership, :share_key).present?
+      end
+
+      # 招待コード(share_key)でグループ参加
+      def join_group_by_share_key
+        share_key = params.dig(:membership, :share_key).to_s.strip
+        group = Group.find_by(share_key: share_key)
+
+        return render_share_key_error("招待コードが間違っています。再度ご確認ください。") if group.nil?
+
+        if Membership.exists?(user_id: current_user.id, group_id: group.id)
+          return render_share_key_error("既に参加済みです。")
+        end
+
+        membership = Membership.new(
+          user: current_user,
+          group: group,
+          role: "member",
+          active: true
+        )
+
+        if membership.save
+          Rails.logger.info "Membership created by share_key: User #{membership.user.name} joined Group #{membership.group.name}"
+          render_membership_success(membership, :created)
+        else
+          handle_unprocessable_entity(membership.errors.full_messages)
+        end
+      end
+
+      def render_share_key_error(message)
+        render json: {
+          error: "Unprocessable Entity",
+          message: message,
+          errors: [message],
+          status: 422
+        }, status: :unprocessable_entity
       end
     end
   end
