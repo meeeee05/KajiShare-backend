@@ -1,5 +1,5 @@
 class Api::V1::GroupsController < ApplicationController
-  before_action :set_group, only: [:show, :update, :destroy]
+  before_action :set_group, only: [:show, :update, :destroy, :leave]
   before_action :authenticate_user!  # 全アクションで認証必須
   before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
   before_action :check_admin_permission, only: [:update, :destroy]
@@ -78,6 +78,31 @@ class Api::V1::GroupsController < ApplicationController
       Rails.logger.error "Failed to delete group: #{e.message}"
       handle_internal_error("Failed to delete group: #{e.message}")
     end
+  end
+
+  # DELETE /api/v1/groups/:id/leave - 現在ユーザーがグループから離脱
+  # 最後のユーザーが離脱した場合はグループ自体を削除
+  def leave
+    membership = current_user_membership(@group.id)
+    return handle_not_found("You are not a member of this group") if membership.nil?
+
+    ActiveRecord::Base.transaction do
+      membership.destroy!
+
+      # メンバーが0人になったらグループを自動削除
+      if @group.memberships.count.zero?
+        @group.destroy!
+        return render json: {
+          message: "You left the group. The group had no members and was deleted.",
+          deleted_group_id: @group.id
+        }, status: :ok
+      end
+
+      render json: { message: "You have left the group." }, status: :ok
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to leave group: #{e.message}"
+    handle_internal_error("Failed to leave group: #{e.message}")
   end
 
   private

@@ -12,6 +12,11 @@ Rails.application.routes.draw do
       resources :users, only: [:index, :show, :create, :update, :destroy]
 
       resources :groups do
+        member do
+          post :leave
+          delete :leave
+          delete "members/me", to: "groups#leave"
+        end
         resources :tasks, only: [:index, :create, :show, :update, :destroy]
         resources :memberships, only: [:index, :create, :destroy]
       end
