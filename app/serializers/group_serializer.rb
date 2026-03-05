@@ -1,14 +1,20 @@
 class GroupSerializer < ActiveModel::Serializer
   attributes :id, :name, :share_key, :assign_mode, :balance_type, :active, :created_by_id,
-             :members_count, :admin_users, :member_users
+             :creator_name, :members_count, :admin_users, :member_users
 
   # 関連データの包含(関連するオブジェクトを自動でJSONに含める)
+  has_one :creator, serializer: BasicUserSerializer
   has_many :memberships, serializer: MembershipSerializer
   has_many :tasks, serializer: TaskSerializer
 
   # グループのアクティブメンバー数をカウント
   def members_count
     active_memberships.count
+  end
+
+  # グループ作成者名
+  def creator_name
+    object.creator&.name
   end
 
   # 管理者ユーザーのリストを取得

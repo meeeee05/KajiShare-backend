@@ -8,8 +8,11 @@ class Api::V1::GroupsController < ApplicationController
   def index
     # 現在のユーザーが参加している（アクティブな）グループのみ取得
     user_group_ids = current_user.memberships.where(active: true).pluck(:group_id)
-    groups = Group.includes(:memberships, :tasks).where(id: user_group_ids)
-    render json: groups, each_serializer: GroupSerializer
+    groups = Group.includes(:creator, :memberships, :tasks).where(id: user_group_ids)
+    render json: groups,
+           each_serializer: GroupSerializer,
+           adapter: :attributes,
+           include: [:creator]
   end
 
   # GET /api/v1/groups/:id - グループメンバーのみアクセス可能
@@ -126,7 +129,11 @@ class Api::V1::GroupsController < ApplicationController
 
   # 共通メソッド：グループ情報のJSONレスポンスを生成
   def render_group_success(group, status = :ok)
-    render json: group, serializer: GroupSerializer, status: status
+    render json: group,
+           serializer: GroupSerializer,
+           status: status,
+           adapter: :attributes,
+           include: [:creator]
   end
 
   # nilの場合や非アクティブの場合に403エラー
