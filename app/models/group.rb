@@ -1,4 +1,6 @@
 class Group < ApplicationRecord
+  ASSIGN_MODE_VALUES = %w[manual random balanced].freeze
+
   #model関連付け 
   belongs_to :creator, class_name: "User", foreign_key: :created_by_id, optional: true
   has_many :memberships, dependent: :destroy
@@ -8,6 +10,7 @@ class Group < ApplicationRecord
   has_many :evaluations, through: :assignments, dependent: :destroy
 
   before_validation :assign_share_key, on: :create
+  before_validation :normalize_assign_mode
   after_create :ensure_creator_membership
 
   # バリデーション
@@ -20,7 +23,7 @@ class Group < ApplicationRecord
             uniqueness: true
 
   validates :assign_mode,
-            inclusion: { in: %w[equal ratio manual] },
+            inclusion: { in: ASSIGN_MODE_VALUES },
             allow_nil: true
 
   validates :balance_type,
@@ -39,6 +42,13 @@ class Group < ApplicationRecord
     begin
       self.share_key = Array.new(6) { characters.sample }.join
     end while self.class.exists?(share_key: share_key)
+  end
+
+  # フロントの表記ゆれを既存保存値へ正規化
+  def normalize_assign_mode
+    return if assign_mode.blank?
+
+    self.assign_mode = ASSIGN_MODE_ALIASES.fetch(assign_mode, assign_mode)
   end
 
   # 作成者が設定されている場合、作成者をAdminとしてグループに自動参加させる

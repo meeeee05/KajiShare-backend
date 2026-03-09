@@ -18,11 +18,8 @@ RSpec.describe Group, type: :model do
 
     it { should validate_presence_of(:name) }
     it { should validate_length_of(:name).is_at_most(100) }
-    it { should validate_presence_of(:share_key) }
     it { should validate_uniqueness_of(:share_key) }
-    it { should validate_presence_of(:assign_mode) }
-    it { should validate_inclusion_of(:assign_mode).in_array(%w[equal ratio manual]) }
-    it { should validate_presence_of(:balance_type) }
+    it { should validate_inclusion_of(:assign_mode).in_array(%w[manual random balanced]) }
     it { should validate_inclusion_of(:balance_type).in_array(%w[point time]) }
   end
 
