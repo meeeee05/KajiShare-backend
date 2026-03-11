@@ -5,6 +5,7 @@ class Group < ApplicationRecord
   }.freeze
 
   ASSIGN_MODE_VALUES = %w[manual random balanced].freeze
+  BALANCE_TYPE_VALUES = %w[more less].freeze
 
   #model関連付け 
   belongs_to :creator, class_name: "User", foreign_key: :created_by_id, optional: true
@@ -32,7 +33,7 @@ class Group < ApplicationRecord
             allow_nil: true
 
   validates :balance_type,
-            inclusion: { in: %w[point time] },
+            inclusion: { in: BALANCE_TYPE_VALUES },
             allow_nil: true
 
   # active は boolean 型なので inclusion バリデーションは不要

@@ -5,7 +5,7 @@ FactoryBot.define do
     sequence(:name) { |n| "Test Group #{n}" }
     sequence(:share_key) { |n| "share_key_#{n}" }
     assign_mode { "manual" }
-    balance_type { "point" }
+    balance_type { "more" }
     active { true }
   end
 end

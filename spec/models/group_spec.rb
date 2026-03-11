@@ -20,7 +20,7 @@ RSpec.describe Group, type: :model do
     it { should validate_length_of(:name).is_at_most(100) }
     it { should validate_uniqueness_of(:share_key) }
     it { should validate_inclusion_of(:assign_mode).in_array(%w[manual random balanced]) }
-    it { should validate_inclusion_of(:balance_type).in_array(%w[point time]) }
+    it { should validate_inclusion_of(:balance_type).in_array(%w[more less]) }
   end
 
   # 異常系：group名が空の場合は保存できない

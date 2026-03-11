@@ -83,7 +83,7 @@ RSpec.describe "Api::V1::Groups", type: :request do
 
     # 正常系：新規グループ作成とユーザーを管理者に設定
     it "creates a new group and makes user admin" do
-      attrs = { group: { name: "New Test Group", share_key: "new-test-key", assign_mode: "manual", balance_type: "point" } }
+      attrs = { group: { name: "New Test Group", share_key: "new-test-key", assign_mode: "manual", balance_type: "more" } }
       expect {
         post "/api/v1/groups", params: attrs, headers: headers
       }.to change(Group, :count).by(1).and change(Membership, :count).by(1)
@@ -171,7 +171,7 @@ RSpec.describe "Api::V1::Groups", type: :request do
 
     # 異常系：Authorizationヘッダーがない場合、401を返す(post)
     it "returns unauthorized for create without Authorization header" do
-      attrs = { group: { name: "No Auth Group", share_key: "no-auth-key", assign_mode: "manual", balance_type: "point" } }
+      attrs = { group: { name: "No Auth Group", share_key: "no-auth-key", assign_mode: "manual", balance_type: "more" } }
       post "/api/v1/groups", params: attrs
       expect(response).to have_http_status(:unauthorized)
     end

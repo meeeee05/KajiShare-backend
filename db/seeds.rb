@@ -28,7 +28,7 @@ end
 group = Group.find_or_create_by!(name: "家事シェア") do |g|
   g.share_key = "abcd1234"
   g.assign_mode = "manual"
-  g.balance_type = "point"
+  g.balance_type = "more"
   g.active = true
 end
 
