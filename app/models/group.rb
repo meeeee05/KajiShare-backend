@@ -1,4 +1,9 @@
 class Group < ApplicationRecord
+  ASSIGN_MODE_ALIASES = {
+    # "balance" => "balanced",
+    # "branced" => "balanced"
+  }.freeze
+
   ASSIGN_MODE_VALUES = %w[manual random balanced].freeze
 
   #model関連付け 
