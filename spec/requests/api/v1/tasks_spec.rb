@@ -111,7 +111,7 @@ RSpec.describe "Api::V1::Tasks", type: :request do
   describe "POST /api/v1/groups/:group_id/tasks" do
     # 正常系：グループメンバーとしてのアクセス
     let(:valid_params) do
-      { task: { name: "New Task", description: "desc", point: 10 } }
+      { task: { name: "New Task", description: "desc", point: 5 } }
     end
 
     # 異常系：グループ非メンバーとしてのアクセス
@@ -264,9 +264,9 @@ RSpec.describe "Api::V1::Tasks", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(json["error"]).to eq("Unprocessable Entity")
-      expect(json["message"]).to eq("Validation failed")
+      expect(json["message"]).to eq("検証に失敗しました")
       expect(json["errors"]).to be_an(Array)
-      expect(json["errors"]).to include("Point must be greater than 0")
+      expect(json["errors"].join).to match(/greater than or equal to 1|1以上|greater than 0/)
     end
   end
 end

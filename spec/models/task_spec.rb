@@ -12,7 +12,8 @@ RSpec.describe Task, type: :model do
     it { should validate_length_of(:description).is_at_most(50) }
     it { should validate_presence_of(:point) }
     it { should validate_numericality_of(:point).only_integer }
-    it { should validate_numericality_of(:point).is_greater_than(0) }
+    it { should validate_numericality_of(:point).is_greater_than_or_equal_to(1) }
+    it { should validate_numericality_of(:point).is_less_than_or_equal_to(5) }
 
     # 正常系：descriptionが空文字でも登録可能
     it 'allows blank description' do
@@ -30,14 +31,21 @@ RSpec.describe Task, type: :model do
     it 'does not allow negative points' do
       task = build(:task, point: -1)
       expect(task).not_to be_valid
-      expect(task.errors[:point]).to include('must be greater than 0')
+      expect(task.errors[:point]).to include('must be greater than or equal to 1')
     end
 
     # 異常系：pointが正の整数でない（０）
     it 'does not allow zero points' do
       task = build(:task, point: 0)
       expect(task).not_to be_valid
-      expect(task.errors[:point]).to include('must be greater than 0')
+      expect(task.errors[:point]).to include('must be greater than or equal to 1')
+    end
+
+    # 異常系：pointが上限を超えている
+    it 'does not allow points greater than 5' do
+      task = build(:task, point: 6)
+      expect(task).not_to be_valid
+      expect(task.errors[:point]).to include('must be less than or equal to 5')
     end
 
     # 異常系：pointが正の整数でない（少数値）

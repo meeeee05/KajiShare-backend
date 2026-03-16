@@ -5,6 +5,6 @@ FactoryBot.define do
     association :group
     sequence(:name) { |n| "Test Task #{n}" }
     description { "Test task description" }
-    point { 10 }
+    point { 3 }
   end
 end
