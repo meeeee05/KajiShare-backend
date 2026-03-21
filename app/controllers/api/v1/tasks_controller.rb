@@ -11,6 +11,7 @@ module Api
       def index
         #グループ内のタスク一覧（メンバーシップチェック済み）
         tasks = @group.tasks
+        tasks = filter_tasks_by_status(tasks)
         render json: tasks, each_serializer: TaskSerializer
       end
 
@@ -97,6 +98,20 @@ module Api
       # 共通メソッド：タスク情報のJSONレスポンスを生成
       def render_task_success(task, status = :ok)
         render json: task, serializer: TaskSerializer, status: status
+      end
+
+      # クエリパラメータに応じてタスクを絞り込む
+      # - completed: 全assignmentがcompletedのタスクのみ
+      # - incomplete: completed以外のタスク
+      def filter_tasks_by_status(tasks)
+        case params[:status]
+        when 'completed'
+          tasks.completed
+        when 'incomplete'
+          tasks.incomplete
+        else
+          tasks
+        end
       end
 
       # グループIDを取得するヘルパーメソッド（権限チェック）

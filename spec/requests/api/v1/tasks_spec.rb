@@ -41,6 +41,62 @@ RSpec.describe "Api::V1::Tasks", type: :request do
         expect(json["data"]).to be_an(Array)
         expect(json["data"].first["id"].to_i).to eq(task.id)
       end
+
+      # 正常系：statusクエリパラメータによる絞り込み
+      it "returns only completed tasks when status=completed" do
+         membership = create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+         completed_task = create(:task, group: group)
+         incomplete_task = create(:task, group: group)
+
+         create(:assignment,
+           task: completed_task,
+           membership: membership,
+           status: 'completed',
+           due_date: Date.current,
+           completed_date: Date.current)
+         create(:assignment,
+           task: incomplete_task,
+           membership: membership,
+           status: 'not_started',
+           due_date: Date.tomorrow,
+           completed_date: nil)
+
+         get "/api/v1/groups/#{group.id}/tasks", params: { status: 'completed' }, headers: headers
+
+         expect(response).to have_http_status(:ok)
+         ids = json["data"].map { |row| row["id"].to_i }
+         expect(ids).to include(completed_task.id)
+         expect(ids).not_to include(incomplete_task.id)
+         expect(ids).not_to include(task.id)
+            end
+
+      # 正常系：statusクエリパラメータによる絞り込み（incomplete）
+      it "returns non-completed tasks when status=incomplete" do
+         membership = create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+         completed_task = create(:task, group: group)
+         incomplete_task = create(:task, group: group)
+
+         create(:assignment,
+           task: completed_task,
+           membership: membership,
+           status: 'completed',
+           due_date: Date.current,
+           completed_date: Date.current)
+         create(:assignment,
+           task: incomplete_task,
+           membership: membership,
+           status: 'in_progress',
+           due_date: Date.tomorrow,
+           completed_date: nil)
+
+         get "/api/v1/groups/#{group.id}/tasks", params: { status: 'incomplete' }, headers: headers
+
+         expect(response).to have_http_status(:ok)
+         ids = json["data"].map { |row| row["id"].to_i }
+         expect(ids).to include(incomplete_task.id)
+         expect(ids).to include(task.id)
+         expect(ids).not_to include(completed_task.id)
+            end
     end
 
     # 異常系：グループ非メンバーとしてのアクセス
