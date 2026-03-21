@@ -54,7 +54,7 @@ RSpec.describe Evaluation, type: :model do
         :assignment,
         membership: membership,
         task: task,
-        status: 'pending'
+        status: 'not_started'
       )
 
       evaluation = build(

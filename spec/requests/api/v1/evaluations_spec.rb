@@ -169,7 +169,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     #異常系：アサインメントが完了状態でない場合に422を返す
     it "returns 422 when assignment is not completed" do
       alt_task = create(:task, group: group)
-      incomplete_assignment = create(:assignment, task: alt_task, membership: admin_membership, due_date: 2.days.from_now, status: "pending")
+      incomplete_assignment = create(:assignment, task: alt_task, membership: admin_membership, due_date: 2.days.from_now, status: "not_started")
       params = { evaluation: { assignment_id: incomplete_assignment.id, score: 3, feedback: "test" } }
       post "/api/v1/evaluations", params: params, headers: headers
       expect(response).to have_http_status(:unprocessable_entity)

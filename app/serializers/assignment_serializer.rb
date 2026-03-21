@@ -23,7 +23,7 @@ class AssignmentSerializer < ActiveModel::Serializer
 
   # DB内のstatusカラムを使用
   def status
-    object.status
+    object.status_before_type_cast.presence || object.status
   end
 
   # 期限までの日数を計算

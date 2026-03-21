@@ -117,6 +117,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
         expect { post "/api/v1/tasks/#{task.id}/assignments", params: valid_params, headers: headers }.to change(Assignment, :count).by(1)
         expect(response).to have_http_status(:created)
         expect(json_response["data"]["attributes"]["comment"]).to eq("test")
+        expect(json_response["data"]["attributes"]["status"]).to eq("着手前")
       end
     end
 

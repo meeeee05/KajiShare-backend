@@ -5,7 +5,7 @@ FactoryBot.define do
     association :task
     association :membership
     due_date { 1.week.from_now }
-    status { "pending" }
+    status { "not_started" }
     comment { "Test assignment comment" }
 
     trait :completed do

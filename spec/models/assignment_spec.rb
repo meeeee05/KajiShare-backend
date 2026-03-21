@@ -50,7 +50,7 @@ RSpec.describe Assignment, type: :model do
     let(:membership) { create(:membership) }
     let(:task) { create(:task, group: membership.group) }
     it 'accepts valid status values' do
-      assignment = build(:assignment, task: task, membership: membership, status: 'pending')
+      assignment = build(:assignment, task: task, membership: membership, status: 'not_started')
       expect(assignment).to be_valid
       assignment.status = 'in_progress'
       expect(assignment).to be_valid

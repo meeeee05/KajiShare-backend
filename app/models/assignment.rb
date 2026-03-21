@@ -8,7 +8,7 @@ class Assignment < ApplicationRecord
 
   # ステータスを管理
   enum :status, {
-    pending: "pending",
+    not_started: "着手前",
     in_progress: "in_progress", 
     completed: "completed"
   }
@@ -34,6 +34,6 @@ class Assignment < ApplicationRecord
 
   # completed_date に基づいて status を completed に変更
   def sync_status_with_completed_date
-    self.status = completed_date.present? ? "completed" : (status.blank? ? "pending" : status)
+    self.status = completed_date.present? ? "completed" : (status.blank? ? "not_started" : status)
   end
 end
