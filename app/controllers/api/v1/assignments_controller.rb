@@ -34,6 +34,8 @@ module Api
           else
             handle_unprocessable_entity(assignment.errors.full_messages)
           end
+        rescue ActionController::ParameterMissing
+          raise
         rescue StandardError => e
           handle_internal_error("Failed to create assignment: #{e.message}")
         end
@@ -48,6 +50,8 @@ module Api
           else
             handle_unprocessable_entity(@assignment.errors.full_messages)
           end
+        rescue ActionController::ParameterMissing
+          raise
         rescue StandardError => e
           handle_internal_error("Failed to update assignment: #{e.message}")
         end

@@ -153,6 +153,18 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       end
     end
 
+    # 異常系：assignmentパラメータが存在しない場合
+    context "when assignment param is missing" do
+      let(:task_id) { task.id }
+      let(:params) { { status: 'not_started' } }
+
+      it do
+        subject
+        expect(response).to have_http_status(:bad_request)
+        expect(json_response["error"]).to eq("Bad Request")
+      end
+    end
+
     # 異常系：id形式が不正な場合
     context "when id format is invalid" do
       let(:task_id) { 'invalid_id' }
@@ -286,7 +298,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response["error"]).to eq("Unprocessable Entity")
-      expect(json_response["message"]).to eq("Validation failed")
+      expect(json_response["message"]).to eq("検証に失敗しました")
       expect(json_response["errors"]).to be_an(Array)
       expect(json_response["errors"].any? { |e| e.include?("期限日以降") }).to be(true)
     end
@@ -309,7 +321,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response["error"]).to eq("Unprocessable Entity")
-      expect(json_response["message"]).to eq("Validation failed")
+      expect(json_response["message"]).to eq("検証に失敗しました")
       expect(json_response["errors"]).to include("Task has already been taken")
     end
   end
