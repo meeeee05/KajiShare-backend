@@ -15,7 +15,7 @@ class Assignment < ApplicationRecord
 
   # バリデーション
   validates :task_id, :membership_id, :status, presence: true
-  validates :task_id, uniqueness: { scope: :membership_id }
+  validates :task_id, uniqueness: true
 
   # completed のときは completed_date 必須
   validates :completed_date, presence: true, if: :completed?

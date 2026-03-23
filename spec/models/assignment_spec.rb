@@ -14,7 +14,7 @@ RSpec.describe Assignment, type: :model do
     # belongs_toで十分なのでpresence_ofは削除
     it { should belong_to(:task) }
     it { should belong_to(:membership) }
-    it { should validate_uniqueness_of(:task_id).scoped_to(:membership_id) }
+    it { should validate_uniqueness_of(:task_id) }
   end
 
   # 異常系：入力値検証
@@ -36,10 +36,11 @@ RSpec.describe Assignment, type: :model do
       expect(assignment.errors[:completed_date]).to include('は期限日以降である必要があります')
     end
 
-    # 異常系：同じ課題・同じメンバーにはAssignmentを重複して作成できない
-    it 'is invalid with duplicate task and membership' do
+    # 異常系：同じ課題にはAssignmentを重複して作成できない
+    it 'is invalid with duplicate task' do
       create(:assignment, task: task, membership: membership)
-      duplicate = build(:assignment, task: task, membership: membership)
+      other_membership = create(:membership, group: membership.group, workload_ratio: nil)
+      duplicate = build(:assignment, task: task, membership: other_membership)
       expect(duplicate).not_to be_valid
       expect(duplicate.errors[:task_id]).to include('has already been taken')
     end

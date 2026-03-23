@@ -100,9 +100,10 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
   end
 
   describe "POST /api/v1/evaluations" do
+    let!(:another_task) { create(:task, group: group) }
     let!(:another_assignment) do
-      # 既存のadminメンバーシップを使って同じグループ内の別アサインメントを作成
-      create(:assignment, :completed, task: task, membership: admin_membership, due_date: 2.days.ago, completed_date: 1.day.ago)
+      # 既存のadminメンバーシップを使って同じグループ内の別タスクにアサインメントを作成
+      create(:assignment, :completed, task: another_task, membership: admin_membership, due_date: 2.days.ago, completed_date: 1.day.ago)
     end
     let(:valid_params) do
       { evaluation: { assignment_id: another_assignment.id, score: 4, feedback: "good" } }
@@ -144,7 +145,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       json = JSON.parse(response.body)
       expect(json["error"]).to eq("Unprocessable Entity")
-      expect(json["message"]).to eq("Validation failed")
+      expect(json["message"]).to eq("検証に失敗しました")
       expect(json["errors"]).to include("Score must be greater than or equal to 1")
     end
 

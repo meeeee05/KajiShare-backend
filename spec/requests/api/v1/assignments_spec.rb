@@ -107,14 +107,15 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
     # 正常系：グループメンバーとしてのアクセス
     context "when user is member" do
-      let(:task_id) { task.id }
+      let(:assignable_task) { create(:task, group: group) }
+      let(:task_id) { assignable_task.id }
       let(:params) { valid_params }
       it "creates assignment" do
         another_user = create(:user)
         # 既存メンバーは100のまま、追加メンバーはnilで合計100を維持
         create(:membership, user: another_user, group: group, role: 'member', active: true, workload_ratio: nil)
         allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(another_user)
-        expect { post "/api/v1/tasks/#{task.id}/assignments", params: valid_params, headers: headers }.to change(Assignment, :count).by(1)
+        expect { post "/api/v1/tasks/#{assignable_task.id}/assignments", params: valid_params, headers: headers }.to change(Assignment, :count).by(1)
         expect(response).to have_http_status(:created)
         expect(json_response["data"]["attributes"]["comment"]).to eq("test")
         expect(json_response["data"]["attributes"]["status"]).to eq("着手前")
@@ -220,11 +221,12 @@ RSpec.describe "Api::V1::Assignments", type: :request do
     subject { delete "/api/v1/assignments/#{assignment_id}", headers: headers }
     # 正常系：グループ管理者としてのアクセス
     context "when user is admin" do
+      let!(:admin_task) { create(:task, group: group) }
       let!(:admin_membership) do
         # 既存メンバーは100のまま、管理者はnilで合計100を維持
         create(:membership, user: admin_user, group: group, role: 'admin', active: true, workload_ratio: nil)
       end
-      let!(:admin_assignment) { create(:assignment, task: task, membership: admin_membership) }
+      let!(:admin_assignment) { create(:assignment, task: admin_task, membership: admin_membership) }
       let(:assignment_id) { admin_assignment.id }
       before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(admin_user) }
       it do
@@ -236,10 +238,11 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
     # 異常系：グループ管理者でない場合のアクセス拒否
     context "when not admin" do
+      let!(:admin_task) { create(:task, group: group) }
       let!(:admin_membership) do
         create(:membership, user: admin_user, group: group, role: 'admin', active: true, workload_ratio: nil)
       end
-      let(:assignment_id) { create(:assignment, task: task, membership: admin_membership).id }
+      let(:assignment_id) { create(:assignment, task: admin_task, membership: admin_membership).id }
       before { allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user) }
       it do
         subject
@@ -313,8 +316,8 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       expect(json_response["data"]["attributes"]["status"]).to eq("completed")
     end
 
-    # 異常系：同じtaskとmembershipの重複したassignmentを作成しようとした場合
-    it "returns 422 when creating duplicate assignment for same task and membership" do
+    # 異常系：同じtaskへの重複assignmentを作成しようとした場合
+    it "returns 422 when creating duplicate assignment for same task" do
       post "/api/v1/tasks/#{task.id}/assignments",
            params: { assignment: { due_date: Date.tomorrow, comment: "dup" } },
            headers: headers
