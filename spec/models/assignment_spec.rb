@@ -14,7 +14,6 @@ RSpec.describe Assignment, type: :model do
     # belongs_toで十分なのでpresence_ofは削除
     it { should belong_to(:task) }
     it { should belong_to(:membership) }
-    it { should validate_uniqueness_of(:task_id) }
   end
 
   # 異常系：入力値検証
@@ -37,12 +36,20 @@ RSpec.describe Assignment, type: :model do
     end
 
     # 異常系：同じ課題にはAssignmentを重複して作成できない
-    it 'is invalid with duplicate task' do
+    it 'is invalid with duplicate task for same user' do
+      create(:assignment, task: task, membership: membership)
+      duplicate = build(:assignment, task: task, membership: membership)
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:base]).to include('同じtask_idのタスクを同じユーザーに重複して割り当てることはできません')
+    end
+
+    # 異常系：同じ課題を別ユーザーに重複して作成できない
+    it 'is invalid with duplicate task for another user' do
       create(:assignment, task: task, membership: membership)
       other_membership = create(:membership, group: membership.group, workload_ratio: nil)
       duplicate = build(:assignment, task: task, membership: other_membership)
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:task_id]).to include('has already been taken')
+      expect(duplicate.errors[:base]).to include('このタスクはすでに別のユーザーに割り当て済みです')
     end
   end
 

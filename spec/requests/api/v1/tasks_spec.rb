@@ -184,6 +184,19 @@ RSpec.describe "Api::V1::Tasks", type: :request do
         expect(json["data"]["attributes"]["name"]).to eq("New Task")
       end
 
+      it "returns 422 when creating duplicate task name in same group" do
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
+        create(:task, group: group, name: "Duplicate Task")
+
+        post "/api/v1/groups/#{group.id}/tasks",
+             params: { task: { name: "Duplicate Task", description: "dup", point: 3 } },
+             headers: headers
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json["errors"]).to be_an(Array)
+        expect(json["errors"].any? { |e| e.include?("このグループ内ですでに登録されています") }).to be(true)
+      end
+
       # 異常系：パラメータ不正
       it "returns error if params invalid" do
         create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)

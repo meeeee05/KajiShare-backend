@@ -316,8 +316,8 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       expect(json_response["data"]["attributes"]["status"]).to eq("completed")
     end
 
-    # 異常系：同じtaskへの重複assignmentを作成しようとした場合
-    it "returns 422 when creating duplicate assignment for same task" do
+    # 異常系：同じtaskを同じユーザーに重複assignmentしようとした場合
+    it "returns 422 when creating duplicate assignment for same task and same user" do
       post "/api/v1/tasks/#{task.id}/assignments",
            params: { assignment: { due_date: Date.tomorrow, comment: "dup" } },
            headers: headers
@@ -325,7 +325,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response["error"]).to eq("Unprocessable Entity")
       expect(json_response["message"]).to eq("検証に失敗しました")
-      expect(json_response["errors"]).to include("Task has already been taken")
+      expect(json_response["errors"]).to include("同じtask_idのタスクを同じユーザーに重複して割り当てることはできません")
     end
   end
 end

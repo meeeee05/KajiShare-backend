@@ -15,7 +15,7 @@ class Assignment < ApplicationRecord
 
   # バリデーション
   validates :task_id, :membership_id, :status, presence: true
-  validates :task_id, uniqueness: true
+  validate :prevent_duplicate_task_assignment
 
   # completed のときは completed_date 必須
   validates :completed_date, presence: true, if: :completed?
@@ -35,5 +35,19 @@ class Assignment < ApplicationRecord
   # completed_date に基づいて status を completed に変更
   def sync_status_with_completed_date
     self.status = completed_date.present? ? "completed" : (status.blank? ? "not_started" : status)
+  end
+
+  # 同じtask_idの重複割り当てを禁止（同一ユーザー/他ユーザーでメッセージを出し分け）
+  def prevent_duplicate_task_assignment
+    return if task_id.blank? || membership_id.blank?
+
+    existing = self.class.where(task_id: task_id).where.not(id: id).first
+    return unless existing
+
+    if existing.membership_id == membership_id
+      errors.add(:base, "同じtask_idのタスクを同じユーザーに重複して割り当てることはできません")
+    else
+      errors.add(:base, "このタスクはすでに別のユーザーに割り当て済みです")
+    end
   end
 end

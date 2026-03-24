@@ -15,6 +15,24 @@ RSpec.describe Task, type: :model do
     it { should validate_numericality_of(:point).is_greater_than_or_equal_to(1) }
     it { should validate_numericality_of(:point).is_less_than_or_equal_to(5) }
 
+    # 異常系：同一グループ内で同名タスクは作成不可
+    it 'does not allow duplicate name within the same group' do
+      existing = create(:task)
+      duplicate = build(:task, group: existing.group, name: existing.name)
+
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:name]).to include('はこのグループ内ですでに登録されています')
+    end
+
+    # 正常系：別グループなら同名タスクを作成可能
+    it 'allows same name in different groups' do
+      existing = create(:task)
+      other_group = create(:group)
+      same_name_task = build(:task, group: other_group, name: existing.name)
+
+      expect(same_name_task).to be_valid
+    end
+
     # 正常系：descriptionが空文字でも登録可能
     it 'allows blank description' do
       task = build(:task, description: '')

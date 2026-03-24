@@ -20,6 +20,7 @@ class Task < ApplicationRecord
 
   # バリデーション
   validates :name, presence: true, length: { maximum: 50 }
+  validates :name, uniqueness: { scope: :group_id, message: "はこのグループ内ですでに登録されています" }
   validates :description, length: { maximum: 50 }, allow_blank: true
   validates :point,
             presence: true,
