@@ -4,8 +4,7 @@ module Api
       before_action :set_group, only: [:index, :create]  # index、createでgroup必須
       before_action :set_task, only: [:show, :update, :destroy]
       before_action :authenticate_user!  # 全アクションで認証必須
-      before_action :check_member_permission, only: [:index, :show, :create, :update]  # 参照・作成・更新はMember権限以上
-      before_action :check_admin_permission, only: [:destroy]  # 削除はAdmin権限のみ
+      before_action :check_member_permission, only: [:index, :show, :create, :update, :destroy]  # 参照・作成・更新・削除はMember権限以上
 
       # GET /api/v1/groups/:group_id/tasks - グループメンバーのみアクセス可能（一覧表示）
       def index
@@ -49,13 +48,13 @@ module Api
         end
       end
 
-      # DELETE /api/v1/tasks/:id - Admin権限が必要
+      # DELETE /api/v1/tasks/:id - Member権限以上が必要
       def destroy
         begin
           #トランザクション内で安全に削除
           ActiveRecord::Base.transaction do
             # 削除ログ記録
-            Rails.logger.info "Deleting task '#{@task.name}' (ID: #{@task.id}) from Group '#{@task.group.name}' by admin user #{current_user.name}"
+            Rails.logger.info "Deleting task '#{@task.name}' (ID: #{@task.id}) from Group '#{@task.group.name}' by user #{current_user.name}"
             
             #タスクを削除（dependent: :destroyにより関連データも自動削除）
             @task.destroy!

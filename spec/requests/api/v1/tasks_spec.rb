@@ -282,14 +282,14 @@ RSpec.describe "Api::V1::Tasks", type: :request do
     end
   end
 
-  # 正常系：グループ管理者としてのアクセス
+  # 正常系：グループメンバーとしてのアクセス
   describe "DELETE /api/v1/tasks/:id" do
-    context "as admin" do
+    context "as group member" do
       before do
-        create(:membership, user: admin_user, group: group, role: 'admin', active: true, workload_ratio: 100)
+        create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
         allow_any_instance_of(ApplicationController)
           .to receive(:current_user)
-          .and_return(admin_user)
+          .and_return(user)
       end
 
       # 正常系：タスク削除
@@ -308,14 +308,13 @@ RSpec.describe "Api::V1::Tasks", type: :request do
       end
     end
 
-    # 異常系：グループ非管理者としてのアクセス
-    context "as non-admin" do
+    # 異常系：グループ非メンバーとしてのアクセス
+    context "as non-member" do
       before do
-        non_admin_user = create(:user)
-        create(:membership, user: non_admin_user, group: group, role: 'member', active: true, workload_ratio: 100)
+        non_member_user = create(:user)
         allow_any_instance_of(ApplicationController)
           .to receive(:current_user)
-          .and_return(non_admin_user)
+          .and_return(non_member_user)
         delete "/api/v1/tasks/#{task.id}", headers: headers
       end
 

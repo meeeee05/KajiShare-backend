@@ -15,7 +15,7 @@ class Assignment < ApplicationRecord
 
   # バリデーション
   validates :task_id, :membership_id, :status, presence: true
-  validate :prevent_duplicate_task_assignment
+  validate :prevent_duplicate_task_assignment, on: :create
 
   # completed のときは completed_date 必須
   validates :completed_date, presence: true, if: :completed?
@@ -34,7 +34,12 @@ class Assignment < ApplicationRecord
 
   # completed_date に基づいて status を completed に変更
   def sync_status_with_completed_date
-    self.status = completed_date.present? ? "completed" : (status.blank? ? "not_started" : status)
+    if completed_date.present?
+      self.status = "completed"
+    elsif status.blank? || (status == "completed" && will_save_change_to_completed_date?)
+      # completed_date を明示的に nil に戻したときは completed のままにならないよう補正
+      self.status = "not_started"
+    end
   end
 
   # 同じtask_idの重複割り当てを禁止（同一ユーザー/他ユーザーでメッセージを出し分け）

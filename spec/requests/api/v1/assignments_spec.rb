@@ -316,6 +316,18 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       expect(json_response["data"]["attributes"]["status"]).to eq("completed")
     end
 
+    # 正常系：完了済みassignmentを未完了に戻し、statusを更新できる
+    it "allows reverting completed assignment to in_progress" do
+      assignment.update!(due_date: Date.yesterday, completed_date: Date.current, status: 'completed')
+
+      patch "/api/v1/assignments/#{assignment.id}",
+            params: { assignment: { due_date: Date.current, completed_date: nil, status: 'in_progress', comment: 'in_progress' } },
+            headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response["data"]["attributes"]["status"]).to eq("in_progress")
+    end
+
     # 異常系：同じtaskを同じユーザーに重複assignmentしようとした場合
     it "returns 422 when creating duplicate assignment for same task and same user" do
       post "/api/v1/tasks/#{task.id}/assignments",

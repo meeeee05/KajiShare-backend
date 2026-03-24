@@ -91,7 +91,7 @@ module Api
       
       # Strong Parameters(以下パラメータを受け入れ)
       def assignment_params
-        params.require(:assignment).permit(:due_date, :completed_date, :comment)
+        params.require(:assignment).permit(:due_date, :completed_date, :comment, :status)
       end
       
       # 権限チェック
