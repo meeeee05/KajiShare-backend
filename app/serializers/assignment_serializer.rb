@@ -1,5 +1,6 @@
 class AssignmentSerializer < ActiveModel::Serializer
   attributes :id, :assigned_to_id, :assigned_by_id, :due_date, :completed_date, :comment,
+             :task_id, :completed_at, :completed_by_user_id,
              :task_name, :assigned_to_name, :assigned_by_name, :status, :days_until_due, :is_overdue
 
   # 関連データ
@@ -24,6 +25,11 @@ class AssignmentSerializer < ActiveModel::Serializer
   # DB内のstatusカラムを使用
   def status
     object.status_before_type_cast.presence || object.status
+  end
+
+  # フロント要件向けに completed_date の別名を返却
+  def completed_at
+    object.completed_date
   end
 
   # 期限までの日数を計算

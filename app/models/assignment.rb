@@ -3,6 +3,7 @@ class Assignment < ApplicationRecord
   #model関連付け
   belongs_to :task
   belongs_to :membership
+  belongs_to :completed_by_user, class_name: 'User', foreign_key: :completed_by_user_id, optional: true
   has_many :evaluations, dependent: :destroy
 
 
@@ -19,6 +20,7 @@ class Assignment < ApplicationRecord
 
   # completed のときは completed_date 必須
   validates :completed_date, presence: true, if: :completed?
+  validates :completed_by_user_id, presence: true, if: :completed?
   validate :completed_date_after_due_date
 
   # コールバック - ステータスと完了日の整合性を自動調整
@@ -36,9 +38,13 @@ class Assignment < ApplicationRecord
   def sync_status_with_completed_date
     if completed_date.present?
       self.status = "completed"
+      self.completed_by_user_id ||= membership&.user_id
     elsif status.blank? || (status == "completed" && will_save_change_to_completed_date?)
       # completed_date を明示的に nil に戻したときは completed のままにならないよう補正
       self.status = "not_started"
+      self.completed_by_user_id = nil
+    elsif status != "completed"
+      self.completed_by_user_id = nil
     end
   end
 

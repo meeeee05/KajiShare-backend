@@ -67,6 +67,11 @@ RSpec.describe Assignment, type: :model do
       assignment.completed_date = Date.current
       expect(assignment).to be_valid
     end
+
+    it 'sets completed_by_user_id when completed_date is present' do
+      assignment = create(:assignment, task: task, membership: membership, due_date: Date.yesterday, completed_date: Date.current)
+      expect(assignment.completed_by_user_id).to eq(membership.user_id)
+    end
   end
 
   # 正常系：evaluationを正しく作成できる

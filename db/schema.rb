@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_23_220000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_25_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -25,6 +25,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_23_220000) do
     t.datetime "updated_at", null: false
     t.bigint "membership_id", null: false
     t.string "status", default: "着手前"
+    t.bigint "completed_by_user_id"
+    t.index ["completed_by_user_id"], name: "index_assignments_on_completed_by_user_id"
     t.index ["membership_id"], name: "index_assignments_on_membership_id"
     t.index ["task_id"], name: "index_assignments_on_task_id", unique: true
   end
@@ -86,6 +88,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_23_220000) do
 
   add_foreign_key "assignments", "memberships"
   add_foreign_key "assignments", "tasks"
+  add_foreign_key "assignments", "users", column: "completed_by_user_id"
   add_foreign_key "evaluations", "assignments"
   add_foreign_key "groups", "users", column: "created_by_id"
   add_foreign_key "memberships", "groups"

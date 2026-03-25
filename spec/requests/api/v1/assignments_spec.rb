@@ -314,6 +314,9 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(json_response["data"]["attributes"]["status"]).to eq("completed")
+      expect(json_response["data"]["attributes"]["task_id"]).to eq(assignment.task_id)
+      expect(json_response["data"]["attributes"]["completed_at"]).to eq(Date.current.to_s)
+      expect(json_response["data"]["attributes"]["completed_by_user_id"]).to eq(member_membership.user_id)
     end
 
     # 正常系：完了済みassignmentを未完了に戻し、statusを更新できる
