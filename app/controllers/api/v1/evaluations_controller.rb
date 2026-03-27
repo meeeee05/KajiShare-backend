@@ -22,7 +22,7 @@ module Api
       # POST /api/v1/evaluations
       def create
         begin
-          evaluation = Evaluation.new(evaluation_params)
+          evaluation = Evaluation.new(normalized_evaluation_params)
           # 現在のユーザーを評価者として設定
           evaluation.evaluator_id = current_user.id  
 
@@ -40,7 +40,7 @@ module Api
       # PATCH/PUT /api/v1/evaluations/:id
       def update
         begin
-          if @evaluation.update(evaluation_params)
+          if @evaluation.update(normalized_evaluation_params)
             Rails.logger.info "Evaluation updated: (ID: #{@evaluation.id}) for Assignment #{@evaluation.assignment_id} by user #{current_user.name}"
             render_evaluation_success(@evaluation)
           else
@@ -80,7 +80,19 @@ module Api
 
       # 以下カラムのみ表示・更新を許可
       def evaluation_params
-        params.require(:evaluation).permit(:assignment_id, :score, :feedback)
+        params.require(:evaluation).permit(:assignment_id, :score, :feedback, :point, :comment)
+      end
+
+      # フロント側の表記ゆれを正規化
+      # - point -> score
+      # - comment -> feedback
+      # - nested route の assignment_id を補完
+      def normalized_evaluation_params
+        raw = evaluation_params.to_h.symbolize_keys
+        raw[:assignment_id] ||= params[:assignment_id]
+        raw[:score] ||= raw.delete(:point)
+        raw[:feedback] = raw.delete(:comment) if raw[:feedback].blank? && raw.key?(:comment)
+        raw.slice(:assignment_id, :score, :feedback).compact
       end
 
       # 権限チェック
@@ -90,7 +102,11 @@ module Api
 
         group_id, required_role = case action_name
         when 'create'
-          assignment_id = evaluation_params[:assignment_id]
+          begin
+            assignment_id = normalized_evaluation_params[:assignment_id]
+          rescue ActionController::ParameterMissing
+            return handle_unprocessable_entity(['Assignment must exist'])
+          end
           if assignment_id.blank?
             return handle_unprocessable_entity(['Assignment must exist'])
           end

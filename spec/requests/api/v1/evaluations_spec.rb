@@ -119,6 +119,34 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       expect(json["data"]["attributes"]["score"]).to eq(4)
     end
 
+    # 正常系：assignment配下のnested routeでも作成できる
+    it "creates evaluation via nested assignment route" do
+      expect {
+        post "/api/v1/assignments/#{another_assignment.id}/evaluations",
+             params: { evaluation: { score: 5, feedback: "great" } },
+             headers: headers
+      }.to change(Evaluation, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+      expect(json["data"]["attributes"]["score"]).to eq(5)
+      expect(json["data"]["attributes"]["feedback"]).to eq("great")
+    end
+
+    # 正常系：point/comment の別名パラメータを受け付ける
+    it "accepts point/comment aliases" do
+      expect {
+        post "/api/v1/assignments/#{another_assignment.id}/evaluations",
+             params: { evaluation: { point: 3, comment: "y" } },
+             headers: headers
+      }.to change(Evaluation, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+      expect(json["data"]["attributes"]["score"]).to eq(3)
+      expect(json["data"]["attributes"]["feedback"]).to eq("y")
+    end
+
     # 異常系：パラメータ不正時に422を返す
     it "returns 422 if params invalid" do
       post "/api/v1/evaluations", params: { evaluation: { assignment_id: nil, score: nil } }, headers: headers
