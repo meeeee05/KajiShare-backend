@@ -1,6 +1,6 @@
 class TaskSerializer < ActiveModel::Serializer
   attributes :id, :name, :description, :point
-  attributes :total_assignments, :completed_assignments, :pending_assignments, :completion_rate
+  attributes :total_assignments, :not_started_assignments, :in_progress_assignments, :completed_assignments, :pending_assignments, :completion_rate
 
   # 関連データ
   belongs_to :group, serializer: BasicGroupSerializer
@@ -10,11 +10,15 @@ class TaskSerializer < ActiveModel::Serializer
   def assignment_stats
     @assignment_stats ||= begin
       assignments = object.assignments
-      completed = assignments.where.not(completed_date: nil)
+      not_started = assignments.where(status: Assignment.statuses[:not_started])
+      in_progress = assignments.where(status: Assignment.statuses[:in_progress])
+      completed = assignments.where(status: Assignment.statuses[:completed])
       {
         total: assignments.count,
+        not_started: not_started.count,
+        in_progress: in_progress.count,
         completed: completed.count,
-        pending: assignments.count - completed.count
+        pending: not_started.count + in_progress.count
       }
     end
   end
@@ -24,15 +28,25 @@ class TaskSerializer < ActiveModel::Serializer
     assignment_stats[:total]
   end
 
+  # 進行中のアサインメント数を取得
+  def in_progress_assignments
+    assignment_stats[:in_progress]
+  end
+
   # 完了済みアサインメントの数を取得
   def completed_assignments
     assignment_stats[:completed]
   end
 
-  # 未完了（保留中）のアサインメント数を取得
-  def pending_assignments
-    assignment_stats[:pending]
+  # 着手前のアサインメント数を取得
+  def not_started_assignments
+    assignment_stats[:not_started]
   end
+
+  # 未完了（保留中）のアサインメント数を取得
+  # def pending_assignments
+  #   assignment_stats[:pending]
+  # end
 
   # タスクの完了率を取得
   def completion_rate
