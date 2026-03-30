@@ -77,12 +77,14 @@ module Api
 
       private
 
+      # タスクをセット（indexとcreateで使用）→ タスクが見つからない場合は404エラー
       def set_task
         @task = Task.find(params[:task_id])
       rescue ActiveRecord::RecordNotFound
         handle_not_found("Task with ID #{params[:task_id]} not found")
       end
 
+      # アサインメントをセット（show, update, destroyで使用）→ アサインメントが見つからない場合は404エラー
       def set_assignment
         @assignment = Assignment.find(params[:id])
       rescue ActiveRecord::RecordNotFound

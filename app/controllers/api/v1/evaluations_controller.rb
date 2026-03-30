@@ -105,15 +105,15 @@ module Api
           begin
             assignment_id = normalized_evaluation_params[:assignment_id]
           rescue ActionController::ParameterMissing
-            return handle_unprocessable_entity(['Assignment must exist'])
+            return handle_unprocessable_entity(['タスクが指定されていません'])
           end
           if assignment_id.blank?
-            return handle_unprocessable_entity(['Assignment must exist'])
+            return handle_unprocessable_entity(['タスクが指定されていません'])
           end
           begin
             assignment = Assignment.find(assignment_id)
           rescue ActiveRecord::RecordNotFound
-            return handle_unprocessable_entity(["Assignment must exist"])
+            return handle_unprocessable_entity(["指定されたタスクが存在しません"])
           end
           [assignment.task.group_id, 'member']
         when 'show', 'update'
@@ -133,10 +133,10 @@ module Api
 
       # 権限検証
       def validate_membership(membership, required_role = 'member')
-        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
         
         if required_role == 'admin' && !membership.admin?
-          return handle_forbidden("You are not allowed to perform this action. Admin permission required.")
+          return handle_forbidden("権限が必要です")
         end
       end
 

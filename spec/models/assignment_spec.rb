@@ -68,6 +68,7 @@ RSpec.describe Assignment, type: :model do
       expect(assignment).to be_valid
     end
 
+    # 異常系：無効なenum値はエラーになる
     it 'sets completed_by_user_id when completed_date is present' do
       assignment = create(:assignment, task: task, membership: membership, due_date: Date.yesterday, completed_date: Date.current)
       expect(assignment.completed_by_user_id).to eq(membership.user_id)

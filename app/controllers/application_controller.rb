@@ -5,15 +5,6 @@ class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found  #404 レコード未発見
   rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing  #400 パラメータ不足
   
-  # test用エンドポイント
-  def test
-    render json: { 
-      message: "KajiShare API is working!", 
-      timestamp: Time.current,
-      database: database_status
-    }
-  end
-
   # DB接続状況をJSON形式で確認
   def database_status
     begin
@@ -88,80 +79,79 @@ class ApplicationController < ActionController::API
   private
 
     # 400: Bad Request
-  def handle_parameter_missing(exception)
-    render json: { 
-      error: "Bad Request", 
-      message: "Required parameter missing: #{exception.param}",
-      status: 400
-    }, status: :bad_request
+    def handle_parameter_missing(exception)
+      render json: {
+        error: "Bad Request",
+        message: "必要なパラメータが不足しています: #{exception.param}",
+        status: 400
+      }, status: :bad_request
     end
 
-  # 401: Unauthorized
-  def handle_unauthorized(message = "アクセスが不正です")
-    render json: { 
-      error: "Unauthorized", 
-      message: message,
-      status: 401
-    }, status: :unauthorized
-  end
-
-  # 403: Forbidden
-  def handle_forbidden(message = "アクセスが拒否されました")
-    render json: { 
-      error: "Forbidden", 
-      message: message,
-      status: 403
-    }, status: :forbidden
-  end
-
-  # 404: Not Found
-  def handle_not_found(message_or_exception = nil)
-    message = case message_or_exception
-              when String
-                message_or_exception
-              when Exception
-                message_or_exception.message
-              else
-                "Resource not found"
-              end
-    
-    render json: { 
-      error: "Not Found", 
-      message: message,
-      status: 404
-    }, status: :not_found
-  end
-
-  # 422: Unprocessable Entity
-  def handle_unprocessable_entity(errors)
-    render json: { 
-      error: "Unprocessable Entity", 
-      message: "検証に失敗しました",
-      errors: errors,
-      status: 422
-    }, status: :unprocessable_entity
-  end
-
-  # 500: Internal Server Error
-  def handle_internal_error(exception_or_message)
-    case exception_or_message
-    # 引数が文字列の場合
-    when String
-      message = exception_or_message
-      Rails.logger.error "Internal Server Error: #{message}"
-    when Exception
-      message = exception_or_message.message
-      Rails.logger.error "Internal Server Error: #{message}"
-      Rails.logger.error exception_or_message.backtrace.join("\n")
-    else
-      message = "Something went wrong"
-      Rails.logger.error "Internal Server Error: #{message}"
+    # 401: Unauthorized
+    def handle_unauthorized(message = "認証に失敗しました")
+      render json: {
+        error: "Unauthorized",
+        message: message,
+        status: 401
+      }, status: :unauthorized
     end
-    
-    render json: { 
-      error: "Internal Server Error", 
-      message: Rails.env.production? ? "何か問題が発生しました" : message,
-      status: 500
-    }, status: :internal_server_error
-  end
+
+    # 403: Forbidden
+    def handle_forbidden(message = "アクセス権限がありません")
+      render json: {
+        error: "Forbidden",
+        message: message,
+        status: 403
+      }, status: :forbidden
+    end
+
+    # 404: Not Found
+    def handle_not_found(message_or_exception = nil)
+      message = case message_or_exception
+                when String
+                  message_or_exception
+                when Exception
+                  message_or_exception.message
+                else
+                  "指定されたリソースが見つかりません"
+                end
+
+      render json: {
+        error: "Not Found",
+        message: message,
+        status: 404
+      }, status: :not_found
+    end
+
+    # 422: Unprocessable Entity
+    def handle_unprocessable_entity(errors)
+      render json: {
+        error: "Unprocessable Entity",
+        message: "入力内容に誤りがあります",
+        errors: errors,
+        status: 422
+      }, status: :unprocessable_entity
+    end
+
+    # 500: Internal Server Error
+    def handle_internal_error(exception_or_message)
+      case exception_or_message
+      when String
+        message = exception_or_message
+        Rails.logger.error "Internal Server Error: #{message}"
+      when Exception
+        message = exception_or_message.message
+        Rails.logger.error "Internal Server Error: #{message}"
+        Rails.logger.error exception_or_message.backtrace.join("\n")
+      else
+        message = "予期しないエラーが発生しました"
+        Rails.logger.error "Internal Server Error: #{message}"
+      end
+
+      render json: {
+        error: "Internal Server Error",
+        message: Rails.env.production? ? "サーバーで問題が発生しました。時間をおいて再度お試しください。" : message,
+        status: 500
+      }, status: :internal_server_error
+    end
 end
