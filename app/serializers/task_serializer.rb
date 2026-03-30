@@ -43,10 +43,10 @@ class TaskSerializer < ActiveModel::Serializer
     assignment_stats[:not_started]
   end
 
-  # 未完了（保留中）のアサインメント数を取得
-  # def pending_assignments
-  #   assignment_stats[:pending]
-  # end
+   # 未完了（保留中）のアサインメント数を取得
+   def pending_assignments
+     assignment_stats[:pending]
+   end
 
   # タスクの完了率を取得
   def completion_rate
