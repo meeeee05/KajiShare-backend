@@ -48,17 +48,13 @@ class Assignment < ApplicationRecord
     end
   end
 
-  # 同じtask_idの重複割り当てを禁止（同一ユーザー/他ユーザーでメッセージを出し分け）
+  # 同一ユーザーへの同一task_id重複割り当てを禁止
   def prevent_duplicate_task_assignment
     return if task_id.blank? || membership_id.blank?
 
-    existing = self.class.where(task_id: task_id).where.not(id: id).first
+    existing = self.class.where(task_id: task_id, membership_id: membership_id).where.not(id: id).exists?
     return unless existing
 
-    if existing.membership_id == membership_id
-      errors.add(:base, "同じtask_idのタスクを同じユーザーに重複して割り当てることはできません")
-    else
-      errors.add(:base, "このタスクはすでに別のユーザーに割り当て済みです")
-    end
+    errors.add(:base, "同じタスクを同じユーザーに重複して割り当てることはできません")
   end
 end
