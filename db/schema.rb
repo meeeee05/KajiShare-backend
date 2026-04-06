@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_25_010000) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_05_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,7 +28,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_010000) do
     t.bigint "completed_by_user_id"
     t.index ["completed_by_user_id"], name: "index_assignments_on_completed_by_user_id"
     t.index ["membership_id"], name: "index_assignments_on_membership_id"
-    t.index ["task_id"], name: "index_assignments_on_task_id", unique: true
+    t.index ["task_id", "membership_id"], name: "index_assignments_on_task_id_and_membership_id", unique: true
   end
 
   create_table "evaluations", force: :cascade do |t|
