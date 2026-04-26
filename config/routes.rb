@@ -18,6 +18,7 @@ Rails.application.routes.draw do
           delete "members/me", to: "groups#leave"
         end
         resources :tasks, only: [:index, :create, :show, :update, :destroy]
+        resources :recurring_tasks, only: [:index, :create]
         resources :memberships, only: [:index, :create, :destroy]
       end
 
@@ -27,6 +28,7 @@ Rails.application.routes.draw do
       end
       # 直下でタスクのshow/update/destroyも許可
       resources :tasks, only: [:show, :update, :destroy]
+      resources :recurring_tasks, only: [:show, :update, :destroy]
       
       #独立したリソース
       resources :assignments, only: [:show, :update, :destroy] do

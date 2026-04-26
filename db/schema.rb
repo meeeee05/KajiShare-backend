@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_05_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_26_110100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -65,6 +65,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_05_090000) do
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
+  create_table "recurring_tasks", force: :cascade do |t|
+    t.bigint "group_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.integer "point", null: false
+    t.string "schedule_type", null: false
+    t.integer "day_of_week"
+    t.integer "interval_days"
+    t.date "starts_on", null: false
+    t.boolean "active", default: true, null: false
+    t.bigint "created_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_recurring_tasks_on_active"
+    t.index ["created_by_id"], name: "index_recurring_tasks_on_created_by_id"
+    t.index ["group_id"], name: "index_recurring_tasks_on_group_id"
+    t.index ["schedule_type"], name: "index_recurring_tasks_on_schedule_type"
+  end
+
   create_table "tasks", force: :cascade do |t|
     t.bigint "group_id", null: false
     t.string "name"
@@ -72,8 +91,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_05_090000) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["group_id", "name"], name: "index_tasks_on_group_id_and_name", unique: true
+    t.bigint "source_recurring_task_id"
+    t.date "scheduled_for"
+    t.boolean "auto_generated", default: false, null: false
+    t.index ["group_id", "name"], name: "index_tasks_on_group_id_and_name_manual", unique: true, where: "(scheduled_for IS NULL)"
+    t.index ["group_id", "source_recurring_task_id", "scheduled_for"], name: "index_tasks_on_group_recurring_source_and_scheduled_for", unique: true
     t.index ["group_id"], name: "index_tasks_on_group_id"
+    t.index ["source_recurring_task_id"], name: "index_tasks_on_source_recurring_task_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -93,5 +117,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_05_090000) do
   add_foreign_key "groups", "users", column: "created_by_id"
   add_foreign_key "memberships", "groups"
   add_foreign_key "memberships", "users"
+  add_foreign_key "recurring_tasks", "groups"
+  add_foreign_key "recurring_tasks", "users", column: "created_by_id"
   add_foreign_key "tasks", "groups"
+  add_foreign_key "tasks", "recurring_tasks", column: "source_recurring_task_id"
 end

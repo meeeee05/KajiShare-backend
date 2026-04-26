@@ -1,12 +1,12 @@
 class User < ApplicationRecord
   #model関連付け
   has_many :created_groups, class_name: "Group", foreign_key: :created_by_id, inverse_of: :creator, dependent: :nullify
+  has_many :created_recurring_tasks, class_name: "RecurringTask", foreign_key: :created_by_id, inverse_of: :creator, dependent: :nullify
   has_many :memberships, dependent: :destroy
   has_many :groups, through: :memberships
   has_many :assignments, through: :memberships, dependent: :destroy
   has_many :evaluations, foreign_key: :evaluator_id, dependent: :destroy
 
-  #バリデーション
   validates :google_sub,
             presence: true,
             uniqueness: true
