@@ -7,7 +7,7 @@ class SessionsController < ApplicationController
 
     #トークンが存在しない場合、または形式が不正な場合，unauthorizedエラーを返す
     unless auth_header&.start_with?("Bearer ")
-      return render json: { error: "Unauthorized" }, status: :unauthorized
+      return render json: { error: "認証エラー", message: "認証情報が不足しています" }, status: :unauthorized
     end
 
     #AuthorizationヘッダーからIDトークンを取り出す
@@ -31,11 +31,11 @@ class SessionsController < ApplicationController
         u.picture = picture
       end
 
-      render json: { message: "Login successful", user: user }
+      render json: { message: "ログインに成功しました", user: user }
     rescue StandardError => e
       Rails.logger.error "Google Auth Error: #{e.message}"
 
-      render json: { error: "Invalid ID token" }, status: :unauthorized
+      render json: { error: "認証エラー", message: "IDトークンが無効です" }, status: :unauthorized
     end
   end
 end

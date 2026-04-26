@@ -6,7 +6,8 @@ class Api::V1::BaseController < ApplicationController
   private
 
   def record_not_found(error)
-    render json: { error: error.message }, status: :not_found
+    message = error.message.is_a?(String) && !error.message.ascii_only? ? error.message : "指定されたリソースが見つかりません"
+    render json: { error: "未検出エラー", message: message, status: 404 }, status: :not_found
   end
 
   def record_invalid(error)

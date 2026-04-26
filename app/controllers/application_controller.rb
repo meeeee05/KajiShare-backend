@@ -78,6 +78,13 @@ class ApplicationController < ActionController::API
 
   private
 
+    def localized_message(message, fallback)
+      return fallback if message.blank?
+      return message unless message.is_a?(String)
+
+      message.ascii_only? ? fallback : message
+    end
+
     # 400: Bad Request
     def handle_parameter_missing(exception)
       render json: {

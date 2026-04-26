@@ -42,11 +42,11 @@ class RecurringTask < ApplicationRecord
   # 週次設定とN日おき設定を混在させない
   def exclusive_schedule_fields
     if weekly? && interval_days.present?
-      errors.add(:interval_days, "must be blank for weekly schedule")
+      errors.add(:interval_days, "週次設定では指定できません")
     end
 
     if every_n_days? && day_of_week.present?
-      errors.add(:day_of_week, "must be blank for every_n_days schedule")
+      errors.add(:day_of_week, "N日おき設定では指定できません")
     end
   end
 end
