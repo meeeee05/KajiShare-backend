@@ -23,3 +23,13 @@ class RecurringTask < ApplicationRecord
             if: -> { schedule_type.in?(SCHEDULE_TYPES) }
 
   validate :interval_days_must_be_blank
+
+  private
+
+  # N日おき設定は廃止。interval_daysは受け付けない。
+  def interval_days_must_be_blank
+    return if interval_days.blank?
+
+    errors.add(:interval_days, "この設定は利用できません")
+  end
+end
