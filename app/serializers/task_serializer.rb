@@ -1,5 +1,5 @@
 class TaskSerializer < ActiveModel::Serializer
-  attributes :id, :name, :description, :point
+  attributes :id, :name, :description, :point, :auto_generated, :scheduled_for, :source_recurring_task_id
   attributes :total_assignments, :not_started_assignments, :in_progress_assignments, :completed_assignments, :completion_rate
 
   # 関連データ

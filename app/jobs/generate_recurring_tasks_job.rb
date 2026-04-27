@@ -1,5 +1,6 @@
 class GenerateRecurringTasksJob < ApplicationJob
   queue_as :default
+  BIWEEKLY_INTERVAL_DAYS = 14
 
   # target_dateを指定すると過去日/将来日の再生成確認にも使える
   def perform(target_date = nil)
@@ -29,17 +30,12 @@ class GenerateRecurringTasksJob < ApplicationJob
 
   def due_on_date?(recurring_task, date)
     return false if date < recurring_task.starts_on
+    return false unless recurring_task.day_of_week == date.wday
 
-    case recurring_task.schedule_type
-    when "weekly"
-      recurring_task.day_of_week == date.wday
-    when "every_n_days"
-      interval = recurring_task.interval_days.to_i
-      return false if interval <= 0
+    return true if recurring_task.schedule_type == "weekly"
+    return false unless recurring_task.schedule_type == "biweekly"
 
-      ((date - recurring_task.starts_on).to_i % interval).zero?
-    else
-      false
-    end
+    first_date = recurring_task.starts_on + ((recurring_task.day_of_week - recurring_task.starts_on.wday) % 7)
+    ((date - first_date).to_i % BIWEEKLY_INTERVAL_DAYS).zero?
   end
 end

@@ -81,7 +81,6 @@ module Api
           :point,
           :schedule_type,
           :day_of_week,
-          :interval_days,
           :starts_on,
           :active
         )
