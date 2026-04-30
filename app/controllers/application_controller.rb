@@ -47,6 +47,13 @@ class ApplicationController < ActionController::API
       
       return
     end
+
+    guest_user = authenticate_guest_user(token)
+    return if performed?
+    if guest_user
+      @current_user = guest_user
+      return
+    end
     
     # GoogleIDToken検証
     begin
@@ -77,6 +84,35 @@ class ApplicationController < ActionController::API
   end
 
   private
+
+    def guest_token_verifier
+      Rails.application.message_verifier(:guest_auth)
+    end
+
+    def authenticate_guest_user(token)
+      payload = guest_token_verifier.verified(token)
+      return nil unless payload.is_a?(Hash)
+
+      token_type = payload["type"] || payload[:type]
+      return nil unless token_type == "guest"
+
+      expires_at = (payload["exp"] || payload[:exp]).to_i
+      if expires_at <= Time.current.to_i
+        handle_unauthorized("ゲスト利用期限が切れました。再度ログインしてください。")
+        return nil
+      end
+
+      user_id = payload["user_id"] || payload[:user_id]
+      user = User.find_by(id: user_id, account_type: "guest")
+      unless user
+        handle_unauthorized("ゲスト利用期限が切れました。再度ログインしてください。")
+        return nil
+      end
+
+      user
+    rescue ActiveSupport::MessageVerifier::InvalidSignature
+      nil
+    end
 
     def localized_message(message, fallback)
       return fallback if message.blank?

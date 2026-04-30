@@ -2,6 +2,8 @@ class Api::V1::SessionsController < Api::V1::BaseController
   # require "google-id-token"
   require 'googleauth/id_tokens/verifier'
 
+  GUEST_TOKEN_TTL = 1.hour
+
   def google_auth
     auth_header = request.headers["Authorization"]
 
@@ -38,5 +40,52 @@ class Api::V1::SessionsController < Api::V1::BaseController
       Rails.logger.error "Google Auth Error: #{e.message}"
       render json: { error: "認証エラー", message: "IDトークンが無効です" }, status: :unauthorized
     end
+  end
+
+  def guest_auth
+    user = build_guest_user
+
+    if user.save
+      token_expires_at = GUEST_TOKEN_TTL.from_now
+      token = guest_token_verifier.generate(
+        {
+          type: "guest",
+          user_id: user.id,
+          exp: token_expires_at.to_i
+        }
+      )
+
+      render_success(
+        {
+          user: user,
+          token: token,
+          token_type: "Bearer",
+          expires_at: token_expires_at.iso8601
+        },
+        "ゲストログインに成功しました"
+      )
+    else
+      handle_unprocessable_entity(user.errors.full_messages)
+    end
+  rescue StandardError => e
+    Rails.logger.error "Guest Auth Error: #{e.message}"
+    handle_internal_error("ゲストログイン中にエラーが発生しました")
+  end
+
+  private
+
+  def build_guest_user
+    random = SecureRandom.hex(8)
+    User.new(
+      google_sub: "guest_#{SecureRandom.uuid}",
+      name: guest_name,
+      email: "guest_#{random}@example.local",
+      picture: nil,
+      account_type: "guest"
+    )
+  end
+
+  def guest_name
+    params[:name].presence || params.dig(:guest, :name).presence || "ゲストユーザー"
   end
 end
