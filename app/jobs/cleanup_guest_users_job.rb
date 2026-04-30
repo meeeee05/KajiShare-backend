@@ -1,6 +1,7 @@
 class CleanupGuestUsersJob < ApplicationJob
   queue_as :default
 
+  GUEST_ACCOUNT_TYPE = "guest"
   EXPIRATION_WINDOW = 1.hour
 
   # 1時間経過したゲストユーザーと、その作成データを削除
@@ -15,7 +16,11 @@ class CleanupGuestUsersJob < ApplicationJob
   private
 
   def expired_guest_users
-    User.where(account_type: "guest").where("created_at <= ?", EXPIRATION_WINDOW.ago)
+    User.where(account_type: GUEST_ACCOUNT_TYPE).where("created_at <= ?", expiration_threshold)
+  end
+
+  def expiration_threshold
+    EXPIRATION_WINDOW.ago
   end
 
   def cleanup_guest_user!(user)

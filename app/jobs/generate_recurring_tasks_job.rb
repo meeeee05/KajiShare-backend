@@ -10,15 +10,7 @@ class GenerateRecurringTasksJob < ApplicationJob
       next unless due_on_date?(recurring_task, date)
 
       begin
-        Task.create!(
-          group_id: recurring_task.group_id,
-          name: recurring_task.name,
-          description: recurring_task.description,
-          point: recurring_task.point,
-          source_recurring_task_id: recurring_task.id,
-          scheduled_for: date,
-          auto_generated: true
-        )
+        Task.create!(build_task_attributes(recurring_task, date))
       rescue ActiveRecord::RecordNotUnique
         # 二重生成防止ユニーク制約に引っかかった場合はスキップ
         next
@@ -37,5 +29,17 @@ class GenerateRecurringTasksJob < ApplicationJob
 
     first_date = recurring_task.starts_on + ((recurring_task.day_of_week - recurring_task.starts_on.wday) % 7)
     ((date - first_date).to_i % BIWEEKLY_INTERVAL_DAYS).zero?
+  end
+
+  def build_task_attributes(recurring_task, date)
+    {
+      group_id: recurring_task.group_id,
+      name: recurring_task.name,
+      description: recurring_task.description,
+      point: recurring_task.point,
+      source_recurring_task_id: recurring_task.id,
+      scheduled_for: date,
+      auto_generated: true
+    }
   end
 end
