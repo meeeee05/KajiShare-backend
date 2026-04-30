@@ -14,6 +14,10 @@ production:
     class: GenerateRecurringTasksJob
     schedule: every day at 1am
 
+  cleanup_guest_users:
+    class: CleanupGuestUsersJob
+    schedule: every hour at minute 5
+
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
@@ -22,3 +26,7 @@ development:
   generate_recurring_tasks:
     class: GenerateRecurringTasksJob
     schedule: every day at 1am
+
+  cleanup_guest_users:
+    class: CleanupGuestUsersJob
+    schedule: every hour at minute 5

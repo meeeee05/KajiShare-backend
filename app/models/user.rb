@@ -22,7 +22,7 @@ class User < ApplicationRecord
 
   validates :account_type,
             presence: true,
-            # "user" または "admin" 以外の値を拒否
-            inclusion: { in: %w[user admin] }
+            # "user" / "admin" / "guest" 以外の値を拒否
+            inclusion: { in: %w[user admin guest] }
 
 end

@@ -85,7 +85,7 @@ module Api
       # 自分が実施したタスクが評価された通知
       def task_evaluated_notifications(limit)
         Evaluation
-          .includes(:evaluator, assignment: [:task, membership])
+          .includes(:evaluator, assignment: [:task, :membership])
           .joins(assignment: :membership)
           .where(memberships: { user_id: current_user.id })
           .where.not(evaluator_id: current_user.id)
