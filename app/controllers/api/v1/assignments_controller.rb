@@ -3,13 +3,24 @@ module Api
   module V1
     class AssignmentsController < ApplicationController
       before_action :authenticate_user!
-      before_action :set_task, only: [:index, :create]
+      before_action :set_task, only: [:create]
+      before_action :set_task_for_index, only: [:index], if: -> { params[:task_id].present? }
       before_action :set_assignment, only: [:show, :update, :destroy]
       before_action :validate_permission  
       
       # GET /api/v1/tasks/:task_id/assignments
       def index
-        assignments = @task.assignments.order(:due_date)
+        assignments = if @task
+                        @task.assignments.order(:due_date)
+                      elsif params[:group_id].present?
+                        Assignment.joins(:task)
+                                  .where(tasks: { group_id: params[:group_id] })
+                                  .includes(:task, membership: :user)
+                                  .order(:due_date)
+                      else
+                        return handle_unprocessable_entity(["group_id または task_id が必要です"])
+                      end
+
         render json: assignments, each_serializer: AssignmentSerializer
       end
 
@@ -18,15 +29,19 @@ module Api
         render_assignment_success(@assignment)
       end
 
-
       # POST /api/v1/tasks/:task_id/assignments - Member権限以上が必要
       def create
         begin
           assignment = @task.assignments.build(assignment_params)
-          
-          # 現在のユーザーのmembership_idを設定
-          membership = get_current_user_membership(@task.group_id)
-          assignment.membership_id = membership.id if membership
+
+          # 割り振り先が指定されていればそのメンバーへ、未指定なら作成者自身へ割り当てる
+          target_membership = resolve_target_membership_for_create
+          if target_membership.nil?
+            return handle_unprocessable_entity(["割り当て先メンバーが見つかりません"])
+          end
+          assignment.membership_id = target_membership.id
+          assignment.assigned_to_id = target_membership.user_id
+          assignment.assigned_by_id ||= current_user.id
 
           if assignment.save
             Rails.logger.info "Assignment created: (ID: #{assignment.id}) for Task '#{@task.name}' by user #{current_user.name}"
@@ -44,6 +59,13 @@ module Api
       # PATCH/PUT /api/v1/assignments/:id - Member権限以上が必要
       def update
         begin
+          target_membership = resolve_target_membership_for_update(@assignment.task.group_id)
+          if target_membership
+            @assignment.membership_id = target_membership.id
+            @assignment.assigned_to_id = target_membership.user_id
+            @assignment.assigned_by_id ||= current_user.id
+          end
+
           if @assignment.update(assignment_params)
             Rails.logger.info "Assignment updated: (ID: #{@assignment.id}) for Task '#{@assignment.task.name}' by user #{current_user.name}"
             render_assignment_success(@assignment)
@@ -84,6 +106,12 @@ module Api
         handle_not_found("ID: #{params[:task_id]} のタスクが見つかりません")
       end
 
+      def set_task_for_index
+        @task = Task.find(params[:task_id])
+      rescue ActiveRecord::RecordNotFound
+        handle_not_found("ID: #{params[:task_id]} のタスクが見つかりません")
+      end
+
       # アサインメントをセット（show, update, destroyで使用）→ アサインメントが見つからない場合は404エラー
       def set_assignment
         @assignment = Assignment.find(params[:id])
@@ -93,13 +121,44 @@ module Api
       
       # Strong Parameters(以下パラメータを受け入れ)
       def assignment_params
-        params.require(:assignment).permit(:due_date, :completed_date, :comment, :status)
+        params.require(:assignment).permit(:membership_id, :assigned_to_id, :due_date, :completed_date, :comment, :status)
+      end
+
+      # create時の割り当て先メンバーシップを解決
+      def resolve_target_membership_for_create
+        requested_membership_id = params.dig(:assignment, :membership_id)
+        if requested_membership_id.present?
+          return Membership.find_by(id: requested_membership_id, group_id: @task.group_id, active: true)
+        end
+
+        requested_user_id = params.dig(:assignment, :assigned_to_id) || params.dig(:assignment, :user_id)
+        if requested_user_id.present?
+          return Membership.find_by(user_id: requested_user_id, group_id: @task.group_id, active: true)
+        end
+
+        get_current_user_membership(@task.group_id)
+      end
+
+      def resolve_target_membership_for_update(group_id)
+        requested_membership_id = params.dig(:assignment, :membership_id)
+        if requested_membership_id.present?
+          return Membership.find_by(id: requested_membership_id, group_id: group_id, active: true)
+        end
+
+        requested_user_id = params.dig(:assignment, :assigned_to_id) || params.dig(:assignment, :user_id)
+        if requested_user_id.present?
+          return Membership.find_by(user_id: requested_user_id, group_id: group_id, active: true)
+        end
+
+        nil
       end
       
       # 権限チェック
       def validate_permission
         group_id, required_role = case action_name
-        when 'index', 'create'
+        when 'index'
+          [@task&.group_id || params[:group_id], 'member']
+        when 'create'
           [@task.group_id, 'member']
         when 'show', 'update'
           [@assignment.task.group_id, 'member']

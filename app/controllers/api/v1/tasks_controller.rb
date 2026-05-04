@@ -1,6 +1,8 @@
 module Api
   module V1
     class TasksController < ApplicationController
+      include GroupMembershipValidation
+
       before_action :set_group, only: [:index, :create]  # index、createでgroup必須
       before_action :set_task, only: [:show, :update, :destroy]
       before_action :authenticate_user!  # 全アクションで認証必須
@@ -131,6 +133,7 @@ module Api
       #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
       def check_admin_permission
         membership = validate_group_membership_for_action
+        return unless membership
 
         return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
       end
@@ -140,13 +143,6 @@ module Api
         group_id = get_group_id_for_action
         membership = current_user_membership(group_id)
         validate_membership(membership)
-      end
-
-      # nilの場合や非アクティブの場合に403エラー
-      def validate_membership(membership)
-        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
-        return handle_forbidden("メンバーシップが無効です") unless membership.active?
-        membership
       end
     end
   end

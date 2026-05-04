@@ -83,7 +83,7 @@ module Api
         params.require(:evaluation).permit(:assignment_id, :score, :feedback, :point, :comment)
       end
 
-      # フロント側の表記ゆれを正規化
+      # 表記を正規化
       # - point -> score
       # - comment -> feedback
       # - nested route の assignment_id を補完

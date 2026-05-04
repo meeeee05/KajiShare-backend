@@ -1,5 +1,4 @@
 class SessionsController < ApplicationController
-  #ライブラリの読み込み
   require "google-id-token"
 
   def google_auth

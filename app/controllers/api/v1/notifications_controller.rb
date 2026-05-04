@@ -111,10 +111,12 @@ module Api
           end
       end
 
+      # 現在のユーザーが所属するグループIDのリストをキャッシュ
       def current_user_group_ids
         @current_user_group_ids ||= current_user.memberships.where(active: true).pluck(:group_id)
       end
 
+      # 通知1件分の共通フォーマットを作成
       def build_notification(key:, record_id:, type:, title:, message:, occurred_at:, **extra)
         {
           id: "#{key}_#{record_id}",

@@ -1,6 +1,8 @@
 module Api
   module V1
     class RecurringTasksController < ApplicationController
+      include GroupMembershipValidation
+
       before_action :authenticate_user!
       before_action :set_group, only: [:index, :create]
       before_action :set_recurring_task, only: [:show, :update, :destroy]
@@ -86,11 +88,6 @@ module Api
         )
       end
 
-      # ユーザーのメンバーシップ情報情報を取得
-      def current_user_membership(group_id)
-        Membership.find_by(user_id: current_user.id, group_id: group_id)
-      end
-
       # 定期タスクの成功レスポンスを共通化
       def render_recurring_task_success(recurring_task, status = :ok)
         render json: recurring_task, serializer: RecurringTaskSerializer, status: status
@@ -115,6 +112,8 @@ module Api
       # 管理者権限チェック
       def check_admin_permission
         membership = validate_group_membership_for_action
+        return unless membership
+
         return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
       end
 
@@ -123,14 +122,6 @@ module Api
         group_id = get_group_id_for_action
         membership = current_user_membership(group_id)
         validate_membership(membership)
-      end
-
-      # メンバーシップの検証
-      def validate_membership(membership)
-        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
-        return handle_forbidden("メンバーシップが無効です") unless membership.active?
-
-        membership
       end
     end
   end

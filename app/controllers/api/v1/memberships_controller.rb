@@ -1,6 +1,8 @@
 module Api
   module V1
     class MembershipsController < ApplicationController
+      include GroupMembershipValidation
+
       before_action :set_membership, only: [:show, :update, :destroy, :change_role]
       before_action :authenticate_user!  # 全アクションで認証
       before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
@@ -105,6 +107,7 @@ module Api
 
       private
 
+      # 該当IDのMembershipテーブルから取得
       def set_membership
         @membership = Membership.find(params[:id])
       rescue ActiveRecord::RecordNotFound
@@ -115,18 +118,6 @@ module Api
       def membership_params
         # roleの変更は専用のchange_roleエンドポイントでのみ可能
         params.require(:membership).permit(:user_id, :group_id, :workload_ratio, :active, :role)
-      end
-
-      # 現在のユーザーのメンバーシップ取得（権限チェック込み）
-      def current_user_membership(group_id)
-        Membership.find_by(user_id: current_user.id, group_id: group_id)
-      end
-
-      # nilの場合や非アクティブの場合に403エラー
-      def validate_membership(membership)
-        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
-        return handle_forbidden("メンバーシップが無効です") unless membership.active?
-        membership
       end
 
       # Member権限チェック：指定されたグループのmember以上のみ操作可能
@@ -148,7 +139,8 @@ module Api
         return handle_unprocessable_entity(["グループIDが必要です"]) if group_id.nil?
         
         membership = current_user_membership(group_id)
-        validate_membership(membership)
+        membership = validate_membership(membership)
+        return unless membership
         
         return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
       end

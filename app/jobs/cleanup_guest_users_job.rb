@@ -1,4 +1,4 @@
-class CleanupGuestUsersJob < ApplicationJob
+class CleanupGuestUsersJob < ActiveJob::Base
   queue_as :default
 
   GUEST_ACCOUNT_TYPE = "guest"
@@ -15,14 +15,17 @@ class CleanupGuestUsersJob < ApplicationJob
 
   private
 
+  # 期限切れのゲストユーザーを取得
   def expired_guest_users
     User.where(account_type: GUEST_ACCOUNT_TYPE).where("created_at <= ?", expiration_threshold)
   end
 
+  # 期限切れの基準日時を計算
   def expiration_threshold
     EXPIRATION_WINDOW.ago
   end
 
+  # ゲストユーザーと関連データを安全に削除
   def cleanup_guest_user!(user)
     ActiveRecord::Base.transaction do
       created_group_ids = user.created_groups.pluck(:id)

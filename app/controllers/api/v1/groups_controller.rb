@@ -1,4 +1,6 @@
 class Api::V1::GroupsController < ApplicationController
+  include GroupMembershipValidation
+
   before_action :set_group, only: [:show, :update, :destroy, :leave]
   before_action :authenticate_user!  # 全アクションで認証必須
   before_action :check_member_permission, only: [:index, :show]  # 参照はメンバー権限以上
@@ -122,11 +124,6 @@ class Api::V1::GroupsController < ApplicationController
     params.require(:group).permit(:name, :share_key, :assign_mode, :balance_type, :active)
   end
 
-  # 共通メソッド：指定されたグループに対するユーザーのメンバーシップを取得
-  def current_user_membership(group_id)
-    Membership.find_by(user_id: current_user.id, group_id: group_id)
-  end
-
   # 共通メソッド：グループ情報のJSONレスポンスを生成
   def render_group_success(group, status = :ok)
     render json: group,
@@ -134,13 +131,6 @@ class Api::V1::GroupsController < ApplicationController
            status: status,
            adapter: :attributes,
            include: [:creator]
-  end
-
-  # nilの場合や非アクティブの場合に403エラー
-  def validate_membership(membership)
-    return handle_forbidden("このグループのメンバーではありません") && nil if membership.nil?
-    return handle_forbidden("メンバーシップが無効です") && nil unless membership.active?
-    membership
   end
 
   # 権限チェック：指定されたグループのmember以上のみ操作可能

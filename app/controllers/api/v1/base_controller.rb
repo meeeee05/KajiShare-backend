@@ -5,16 +5,18 @@ class Api::V1::BaseController < ApplicationController
 
   private
 
+  # 404エラー
   def record_not_found(error)
     message = error.message.is_a?(String) && !error.message.ascii_only? ? error.message : "指定されたリソースが見つかりません"
     render json: { error: "未検出エラー", message: message, status: 404 }, status: :not_found
   end
 
+  # 422エラー
   def record_invalid(error)
     render json: { errors: error.record.errors.full_messages }, status: :unprocessable_entity
   end
 
-  #成功時共通
+  # 成功時共通処理
   def render_success(data = {}, message = nil)
     response = { success: true }
     response[:message] = message if message

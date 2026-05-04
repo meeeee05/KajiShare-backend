@@ -5,7 +5,7 @@ module Api
       before_action :authenticate_user!, except: [:create]  # createは認証不要（新規登録）
       before_action :check_user_permission, only: [:show, :update, :destroy]  # 自分の情報のみアクセス可能
 
-      # GET /api/v1/users - 現在のユーザーの情報のみ返す（セキュリティ向上）
+      # GET /api/v1/users - 現在のユーザーの情報のみ返す
       def index
         render json: current_user, serializer: UserSerializer
       end

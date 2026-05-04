@@ -124,7 +124,7 @@ class ApplicationController < ActionController::API
     # 400: Bad Request
     def handle_parameter_missing(exception)
       render json: {
-        error: "リクエストエラー",
+        error: "Bad Request",
         message: "必要なパラメータが不足しています: #{exception.param}",
         status: 400
       }, status: :bad_request
@@ -133,8 +133,8 @@ class ApplicationController < ActionController::API
     # 401: Unauthorized
     def handle_unauthorized(message = "認証に失敗しました")
       render json: {
-        error: "認証エラー",
-        message: localized_message(message, "認証に失敗しました"),
+        error: "Unauthorized",
+        message: message,
         status: 401
       }, status: :unauthorized
     end
@@ -142,8 +142,8 @@ class ApplicationController < ActionController::API
     # 403: Forbidden
     def handle_forbidden(message = "アクセス権限がありません")
       render json: {
-        error: "権限エラー",
-        message: localized_message(message, "アクセス権限がありません"),
+        error: "Forbidden",
+        message: message,
         status: 403
       }, status: :forbidden
     end
@@ -160,26 +160,18 @@ class ApplicationController < ActionController::API
                 end
 
       render json: {
-        error: "未検出エラー",
-        message: localized_message(message, "指定されたリソースが見つかりません"),
+        error: "Not Found",
+        message: message,
         status: 404
       }, status: :not_found
     end
 
     # 422: Unprocessable Entity
     def handle_unprocessable_entity(errors)
-      normalized_errors = Array(errors).compact.map do |error|
-        message = error.to_s
-        # Rails full_messages can look like "Name ^..." when model message starts with ^
-        message = message.sub(/\A.+?\s\^/, "")
-        message.sub(/\A\^/, "")
-      end
-      primary_message = normalized_errors.first.presence || "入力内容に誤りがあります"
-
       render json: {
-        error: primary_message,
-        message: primary_message,
-        errors: normalized_errors,
+        error: "Unprocessable Entity",
+        message: "入力内容に誤りがあります",
+        errors: errors,
         status: 422
       }, status: :unprocessable_entity
     end
@@ -200,12 +192,8 @@ class ApplicationController < ActionController::API
       end
 
       render json: {
-        error: "サーバーエラー",
-        message: if Rails.env.production?
-                   "サーバーで問題が発生しました。時間をおいて再度お試しください。"
-                 else
-                   localized_message(message, "処理中にエラーが発生しました")
-                 end,
+        error: "Internal Server Error",
+        message: Rails.env.production? ? "サーバーで問題が発生しました。時間をおいて再度お試しください。" : message,
         status: 500
       }, status: :internal_server_error
     end

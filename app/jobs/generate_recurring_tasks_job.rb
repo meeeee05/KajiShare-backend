@@ -1,4 +1,4 @@
-class GenerateRecurringTasksJob < ApplicationJob
+class GenerateRecurringTasksJob < ActiveJob::Base
   queue_as :default
   BIWEEKLY_INTERVAL_DAYS = 14
 
@@ -20,6 +20,7 @@ class GenerateRecurringTasksJob < ApplicationJob
 
   private
 
+  # 定期タスクが指定日に該当するかどうかを判定
   def due_on_date?(recurring_task, date)
     return false if date < recurring_task.starts_on
     return false unless recurring_task.day_of_week == date.wday
@@ -31,6 +32,7 @@ class GenerateRecurringTasksJob < ApplicationJob
     ((date - first_date).to_i % BIWEEKLY_INTERVAL_DAYS).zero?
   end
 
+  # 定期タスクと生成予定日からタスクを作成
   def build_task_attributes(recurring_task, date)
     {
       group_id: recurring_task.group_id,
