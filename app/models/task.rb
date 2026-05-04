@@ -24,7 +24,7 @@ class Task < ApplicationRecord
   validates :name,
             uniqueness: {
               scope: :group_id,
-              message: "はこのグループ内ですでに登録されています"
+              message: "^同じグループに同名タスクが既にあります"
             },
             if: :manual_task?
   validates :description, length: { maximum: 50 }, allow_blank: true

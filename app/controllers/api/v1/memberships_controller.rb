@@ -60,7 +60,7 @@ module Api
       # DELETE /api/v1/memberships/:id - Admin権限でメンバーシップ削除
       def destroy
         # 最後のAdminチェック
-        return unless ensure_not_last_admin(@membership, "delete the last admin of the group")
+        return unless ensure_not_last_admin(@membership, "グループの最後の管理者を削除")
 
         # 削除ログ記録
         Rails.logger.info "Deleting membership: User #{@membership.user.name} from Group #{@membership.group.name} by admin #{current_user.name}"
@@ -76,24 +76,24 @@ module Api
           new_role = params[:role]
           
           unless ['admin', 'member'].include?(new_role)
-            return handle_unprocessable_entity(["Invalid role. Must be 'admin' or 'member'"])
+            return handle_unprocessable_entity(["ロールは admin または member を指定してください"])
           end
 
           # 現在のロール（権限）と同じ場合は何もしない
           if @membership.role == new_role
-            return render json: { message: "Role is already #{new_role}" }, status: :ok
+            return render json: { message: "ロールは既に #{new_role} です" }, status: :ok
           end
 
           # AdminからMemberに変更する場合の制限チェック
           if @membership.admin? && new_role == "member"
-            return unless ensure_not_last_admin(@membership, "demote the last admin")
+            return unless ensure_not_last_admin(@membership, "最後の管理者をメンバーに変更")
           end
 
           # ロール変更実行
           if @membership.update(role: new_role)
             Rails.logger.info "Role changed: User #{@membership.user.name} in Group #{@membership.group.name} from #{@membership.role_was} to #{new_role} by admin #{current_user.name}"
             render json: { 
-              message: "Role successfully changed to #{new_role}"
+              message: "ロールを #{new_role} に変更しました"
             }, status: :ok
           else
             handle_unprocessable_entity(@membership.errors.full_messages)
@@ -108,7 +108,7 @@ module Api
       def set_membership
         @membership = Membership.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("Membership with ID #{params[:id]} not found")
+        handle_not_found("ID: #{params[:id]} のメンバーシップが見つかりません")
       end
 
       # 通常の更新用パラメータ（roleは専用エンドポイントで変更）
@@ -124,8 +124,8 @@ module Api
 
       # nilの場合や非アクティブの場合に403エラー
       def validate_membership(membership)
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
+        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
+        return handle_forbidden("メンバーシップが無効です") unless membership.active?
         membership
       end
 
@@ -145,12 +145,12 @@ module Api
         return if action_name == 'create' && join_by_share_key_request?
 
         group_id = get_group_id_for_action
-        return handle_unprocessable_entity(["Group ID is required"]) if group_id.nil?
+        return handle_unprocessable_entity(["グループIDが必要です"]) if group_id.nil?
         
         membership = current_user_membership(group_id)
         validate_membership(membership)
         
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+        return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
       end
 
       # 共通メソッド：メンバーシップ情報のJSONレスポンスを生成
@@ -159,12 +159,12 @@ module Api
       end
 
       # 共通メソッド：最後のAdminチェック
-      def ensure_not_last_admin(membership, action_description = "perform this action")
+      def ensure_not_last_admin(membership, action_description = "この操作を実行")
         return true unless membership.admin?
         
         admin_count = Membership.where(group_id: membership.group_id, role: "admin").count
         if admin_count <= 1
-          handle_forbidden("Cannot #{action_description}. Please assign admin role to another member first.")
+          handle_forbidden("#{action_description}できません。先に別のメンバーへ管理者権限を付与してください。")
           return false
         end
         true

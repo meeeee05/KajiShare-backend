@@ -81,14 +81,14 @@ module Api
       def set_task
         @task = Task.find(params[:task_id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("Task with ID #{params[:task_id]} not found")
+        handle_not_found("ID: #{params[:task_id]} のタスクが見つかりません")
       end
 
       # アサインメントをセット（show, update, destroyで使用）→ アサインメントが見つからない場合は404エラー
       def set_assignment
         @assignment = Assignment.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("Assignment with ID #{params[:id]} not found")
+        handle_not_found("ID: #{params[:id]} の担当が見つかりません")
       end
       
       # Strong Parameters(以下パラメータを受け入れ)
@@ -118,10 +118,10 @@ module Api
 
       # 権限検証
       def validate_membership(membership, required_role = 'member')
-        return handle_forbidden("You are not a member of this group") if membership.nil?
+        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
         
         if required_role == 'admin' && !membership.admin?
-          return handle_forbidden("You are not allowed to perform this action. Admin permission required.")
+          return handle_forbidden("この操作には管理者権限が必要です")
         end
       end
 

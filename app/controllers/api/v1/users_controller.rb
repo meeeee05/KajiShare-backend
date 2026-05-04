@@ -80,7 +80,7 @@ module Api
       def set_user
         @user = User.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("User with ID #{params[:id]} not found")
+        handle_not_found("ID: #{params[:id]} のユーザーが見つかりません")
       end
 
       # Strong Parameters：ユーザーパラメータ許可設定(不正な属性の混入を防ぐ)
@@ -96,22 +96,22 @@ module Api
       # ユーザー権限チェック：自分の情報のみアクセス可能
       def check_user_permission
         if current_user.nil?
-          return handle_unauthorized("You need to sign in or sign up before continuing.")
+          return handle_unauthorized("ログインしてください")
         end
-        action = action_name == 'update' ? 'update' : 'access'
-        message = "You can only #{action} your own user information"
+        action = action_name == 'update' ? '更新' : '参照'
+        message = "自分のユーザー情報のみ#{action}できます"
         return handle_forbidden(message) unless @user.id == current_user.id
       end
 
       # 重複チェック：既存ユーザーとの重複を確認
       def check_user_duplicates
         if params.dig(:user, :email).present? && User.exists?(email: params[:user][:email])
-          handle_unprocessable_entity(["Email already exists"])
+          handle_unprocessable_entity(["メールアドレスは既に登録されています"])
           return true
         end
 
         if params.dig(:user, :google_sub).present? && User.exists?(google_sub: params[:user][:google_sub])
-          handle_unprocessable_entity(["Google account already registered"])
+          handle_unprocessable_entity(["Googleアカウントは既に登録されています"])
           return true
         end
 

@@ -75,13 +75,13 @@ module Api
       def set_group
         @group = Group.find(params[:group_id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("Group with ID #{params[:group_id]} not found")
+        handle_not_found("ID: #{params[:group_id]} のグループが見つかりません")
       end
 
       def set_task
         @task = Task.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("Task with ID #{params[:id]} not found")
+        handle_not_found("ID: #{params[:id]} のタスクが見つかりません")
       end
 
       # Strong Parameters：タスク作成・更新用(ユーザーが入力すべき3つの項目以外は一切受け取らない)
@@ -132,7 +132,7 @@ module Api
       def check_admin_permission
         membership = validate_group_membership_for_action
 
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+        return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
       end
 
       # アクションに応じた権限の検証
@@ -144,8 +144,8 @@ module Api
 
       # nilの場合や非アクティブの場合に403エラー
       def validate_membership(membership)
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
+        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
+        return handle_forbidden("メンバーシップが無効です") unless membership.active?
         membership
       end
     end

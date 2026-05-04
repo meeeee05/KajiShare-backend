@@ -63,14 +63,14 @@ module Api
       def set_group
         @group = Group.find(params[:group_id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("Group with ID #{params[:group_id]} not found")
+        handle_not_found("ID: #{params[:group_id]} のグループが見つかりません")
       end
 
       # 定期タスクをセット,定期タスクが見つからない場合は404エラー
       def set_recurring_task
         @recurring_task = RecurringTask.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("RecurringTask with ID #{params[:id]} not found")
+        handle_not_found("ID: #{params[:id]} の定期タスクが見つかりません")
       end
 
       # 定期タスクのパラメータ
@@ -115,7 +115,7 @@ module Api
       # 管理者権限チェック
       def check_admin_permission
         membership = validate_group_membership_for_action
-        return handle_forbidden("You are not allowed to perform this action. Admin permission required.") unless membership.admin?
+        return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
       end
 
       # グループメンバーシップ情報の取得
@@ -127,8 +127,8 @@ module Api
 
       # メンバーシップの検証
       def validate_membership(membership)
-        return handle_forbidden("You are not a member of this group") if membership.nil?
-        return handle_forbidden("Your membership is not active") unless membership.active?
+        return handle_forbidden("このグループのメンバーではありません") if membership.nil?
+        return handle_forbidden("メンバーシップが無効です") unless membership.active?
 
         membership
       end

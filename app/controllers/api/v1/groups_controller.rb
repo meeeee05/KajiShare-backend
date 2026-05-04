@@ -87,7 +87,7 @@ class Api::V1::GroupsController < ApplicationController
   # 最後のユーザーが離脱した場合はグループ自体を削除
   def leave
     membership = current_user_membership(@group.id)
-    return handle_not_found("You are not a member of this group") if membership.nil?
+    return handle_not_found("このグループのメンバーではありません") if membership.nil?
 
     ActiveRecord::Base.transaction do
       membership.destroy!
@@ -96,12 +96,12 @@ class Api::V1::GroupsController < ApplicationController
       if @group.memberships.count.zero?
         @group.destroy!
         return render json: {
-          message: "You left the group. The group had no members and was deleted.",
+          message: "グループから離脱しました。メンバーが0人になったためグループを削除しました。",
           deleted_group_id: @group.id
         }, status: :ok
       end
 
-      render json: { message: "You have left the group." }, status: :ok
+      render json: { message: "グループから離脱しました" }, status: :ok
     end
   rescue StandardError => e
     Rails.logger.error "Failed to leave group: #{e.message}"
@@ -114,7 +114,7 @@ class Api::V1::GroupsController < ApplicationController
   def set_group
     @group = Group.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    handle_not_found("Group with ID #{params[:id]} not found")
+    handle_not_found("ID: #{params[:id]} のグループが見つかりません")
   end
 
   # Strong Parameters：グループパラメータ許可設定(不正な属性の混入を防ぐ)
@@ -138,8 +138,8 @@ class Api::V1::GroupsController < ApplicationController
 
   # nilの場合や非アクティブの場合に403エラー
   def validate_membership(membership)
-    return handle_forbidden("You are not a member of this group") && nil if membership.nil?
-    return handle_forbidden("Your membership is not active") && nil unless membership.active?
+    return handle_forbidden("このグループのメンバーではありません") && nil if membership.nil?
+    return handle_forbidden("メンバーシップが無効です") && nil unless membership.active?
     membership
   end
 
@@ -160,7 +160,7 @@ class Api::V1::GroupsController < ApplicationController
     return unless membership 
     
     unless membership.admin?
-      handle_forbidden("You are not allowed to perform this action. Admin permission required.")
+      handle_forbidden("この操作には管理者権限が必要です")
     end
   end
 
