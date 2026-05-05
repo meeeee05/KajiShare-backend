@@ -205,6 +205,7 @@ module Api
         end
       end
 
+      # 招待コード(share_key)エラーの共通レスポンス
       def render_share_key_error(message)
         render json: {
           error: message,

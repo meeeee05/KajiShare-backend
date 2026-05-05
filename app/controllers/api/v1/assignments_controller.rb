@@ -109,6 +109,7 @@ module Api
         handle_not_found("ID: #{params[:task_id]} のタスクが見つかりません")
       end
 
+      # タスクをセット → タスクが見つからない場合は404エラー
       def set_task_for_index
         @task = Task.find(params[:task_id])
       rescue ActiveRecord::RecordNotFound
@@ -142,6 +143,7 @@ module Api
         get_current_user_membership(@task.group_id)
       end
 
+      #　更新時の割り当て先変更
       def resolve_target_membership_for_update(group_id)
         requested_membership_id = params.dig(:assignment, :membership_id)
         if requested_membership_id.present?

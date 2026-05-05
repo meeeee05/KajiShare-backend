@@ -14,15 +14,7 @@ module Api
 
         render json: {
           success: true,
-          data: {
-            viewer_user_id: current_user.id,
-            viewer_google_sub: current_user.google_sub,
-            mode: records_mode? ? "records" : "default",
-            notifications: notifications,
-            total: notifications.size,
-            latest_task_assigned_event_id: latest_task_assigned_event_id,
-            server_time: Time.current.iso8601
-          }
+          data: notification_response_data(notifications, latest_task_assigned_event_id)
         }
       end
 
@@ -40,12 +32,17 @@ module Api
       def build_notifications(limit)
         return task_assigned_notifications(limit) if task_assigned_only? || records_mode?
 
-        items = []
-        items.concat(group_join_notifications(limit))
-        items.concat(task_assigned_notifications(limit))
-        items.concat(task_evaluated_notifications(limit))
+        items = notification_collections(limit).flatten
 
         items.sort_by { |item| item[:occurred_at] }.reverse.first(limit)
+      end
+
+      def notification_collections(limit)
+        [
+          group_join_notifications(limit),
+          task_assigned_notifications(limit),
+          task_evaluated_notifications(limit)
+        ]
       end
 
       # 自分が所属するグループに、新しいユーザーが参加した通知
@@ -73,14 +70,7 @@ module Api
 
       # 自分にタスクが割り当てられた通知
       def task_assigned_notifications(limit)
-        task_assigned_notifications_from_events(limit)
-      end
-
-      def task_assigned_notifications_from_events(limit)
-        scope = NotificationEvent.where(event_type: "task_assigned", recipient_user_id: current_user.id)
-        scope = scope.where("id > ?", normalized_since_id) if normalized_since_id.present?
-
-        scope
+        task_assigned_scope
           .order(occurred_at: :desc, id: :desc)
           .limit(limit)
           .map do |event|
@@ -89,13 +79,26 @@ module Api
               record_id: event.id,
               type: "task_assigned",
               title: "新規タスクが割り当てられました",
-              message: event.payload["message"].presence || "タスクが割り当てられました",
+              message: task_assigned_message(event),
               occurred_at: event.occurred_at,
               group_id: event.group_id,
               task_id: event.task_id,
               assignment_id: event.assignment_id
             )
           end
+      end
+
+      # 自分が実施したタスクが評価された通知
+      def task_assigned_scope
+        scope = NotificationEvent.where(event_type: "task_assigned", recipient_user_id: current_user.id)
+        return scope unless normalized_since_id.present?
+
+        scope.where("id > ?", normalized_since_id)
+      end
+
+      # タスク割り当て通知のメッセージを生成
+      def task_assigned_message(event)
+        event.payload["message"].presence || "タスクが割り当てられました"
       end
 
       # 自分が実施したタスクが評価された通知
@@ -139,6 +142,7 @@ module Api
         }.merge(extra)
       end
 
+      # since_idクエリパラメータを正規化して数値を返す。無効な値の場合はnilを返す
       def normalized_since_id
         raw = params[:since_id]
         return nil if raw.blank?
@@ -151,6 +155,7 @@ module Api
         numeric
       end
 
+      # タスク割り当て通知のみを取得
       def task_assigned_only?
         value = params[:type] || params[:types] || params[:only]
         value.to_s == "task_assigned"
@@ -160,10 +165,24 @@ module Api
         ActiveModel::Type::Boolean.new.cast(params[:for_records])
       end
 
+      # 現在のユーザーに関連する最新のタスク割り当て通知イベントIDを取得
       def latest_task_assigned_event_id_for_current_user
         NotificationEvent
           .where(event_type: "task_assigned", recipient_user_id: current_user.id)
           .maximum(:id)
+      end
+
+      # 通知APIのレスポンスデータを構築
+      def notification_response_data(notifications, latest_task_assigned_event_id)
+        {
+          viewer_user_id: current_user.id,
+          viewer_google_sub: current_user.google_sub,
+          mode: records_mode? ? "records" : "default",
+          notifications: notifications,
+          total: notifications.size,
+          latest_task_assigned_event_id: latest_task_assigned_event_id,
+          server_time: Time.current.iso8601
+        }
       end
     end
   end

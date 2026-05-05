@@ -133,18 +133,17 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       expect(json["data"]["attributes"]["feedback"]).to eq("great")
     end
 
-    # 正常系：point/comment の別名パラメータを受け付ける
-    it "accepts point/comment aliases" do
+    # 異常系：point/comment の旧キーは受け付けない
+    it "rejects point/comment aliases" do
       expect {
         post "/api/v1/assignments/#{another_assignment.id}/evaluations",
              params: { evaluation: { point: 3, comment: "y" } },
              headers: headers
-      }.to change(Evaluation, :count).by(1)
+      }.not_to change(Evaluation, :count)
 
-      expect(response).to have_http_status(:created)
+      expect(response).to have_http_status(:unprocessable_entity)
       json = JSON.parse(response.body)
-      expect(json["data"]["attributes"]["score"]).to eq(3)
-      expect(json["data"]["attributes"]["feedback"]).to eq("y")
+      expect(json["errors"]).to include("Score can't be blank")
     end
 
     # 異常系：パラメータ不正時に422を返す

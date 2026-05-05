@@ -78,20 +78,16 @@ module Api
         handle_not_found("ID: #{params[:id]} の評価が見つかりません")
       end
 
-      # 以下カラムのみ表示・更新を許可
+      # 表示・更新を許可
       def evaluation_params
-        params.require(:evaluation).permit(:assignment_id, :score, :feedback, :point, :comment)
+        params.require(:evaluation).permit(:assignment_id, :score, :feedback)
       end
 
-      # 表記を正規化
-      # - point -> score
-      # - comment -> feedback
-      # - nested route の assignment_id を補完
+      # nested route の assignment_id を補完
+      # score/feedback のみ正式入力として扱う
       def normalized_evaluation_params
         raw = evaluation_params.to_h.symbolize_keys
         raw[:assignment_id] ||= params[:assignment_id]
-        raw[:score] ||= raw.delete(:point)
-        raw[:feedback] = raw.delete(:comment) if raw[:feedback].blank? && raw.key?(:comment)
         raw.slice(:assignment_id, :score, :feedback).compact
       end
 

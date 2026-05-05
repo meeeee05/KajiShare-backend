@@ -4,6 +4,7 @@ class Assignment < ApplicationRecord
   belongs_to :membership
   belongs_to :completed_by_user, class_name: 'User', foreign_key: :completed_by_user_id, optional: true
   has_many :evaluations, dependent: :destroy
+  has_many :notification_events, dependent: :destroy
 
 
   # ステータスを管理
