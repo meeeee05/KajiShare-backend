@@ -1,5 +1,4 @@
 class Assignment < ApplicationRecord
-
   #model関連付け
   belongs_to :task
   belongs_to :membership
@@ -14,7 +13,7 @@ class Assignment < ApplicationRecord
     completed: "completed"
   }
 
-  # バリデーション
+  #重複割り当て防止
   validates :task_id, :membership_id, :status, presence: true
   validate :prevent_duplicate_task_assignment, on: :create
 
@@ -24,7 +23,12 @@ class Assignment < ApplicationRecord
   validate :completed_date_after_due_date
 
   # コールバック - ステータスと完了日の整合性を自動調整
+  before_validation :sync_assignee_fields
+  before_validation :refresh_assigned_at
   before_validation :sync_status_with_completed_date
+
+  after_commit :create_task_assigned_event_on_create, on: :create
+  after_commit :create_task_assigned_event_on_reassign, on: :update
 
   private
 
@@ -48,6 +52,31 @@ class Assignment < ApplicationRecord
     end
   end
 
+  # membership_id/assigned_to_id の整合を保つ
+  def sync_assignee_fields
+    return if membership_id.blank?
+
+    membership_user_id = Membership.where(id: membership_id).pick(:user_id)
+    return if membership_user_id.blank?
+
+    if assigned_to_id.blank? || will_save_change_to_membership_id?
+      self.assigned_to_id = membership_user_id
+    end
+  end
+
+  # 割り当て時刻を作成時と再割り当て時に更新
+  def refresh_assigned_at
+    if new_record? && assigned_at.blank?
+      self.assigned_at = Time.current
+      return
+    end
+
+    return unless persisted?
+    return unless will_save_change_to_assigned_to_id? || will_save_change_to_membership_id?
+
+    self.assigned_at = Time.current
+  end
+
   # 同一ユーザーへの同一task_id重複割り当てを禁止
   def prevent_duplicate_task_assignment
     return if task_id.blank? || membership_id.blank?
@@ -56,5 +85,33 @@ class Assignment < ApplicationRecord
     return unless existing
 
     errors.add(:base, "同じタスクを同じユーザーに重複して割り当てることはできません")
+  end
+
+  def create_task_assigned_event_on_create
+    create_task_assigned_notification_event
+  end
+
+  def create_task_assigned_event_on_reassign
+    return unless previous_changes.key?("assigned_to_id") || previous_changes.key?("membership_id") || previous_changes.key?("assigned_at")
+
+    create_task_assigned_notification_event
+  end
+
+  def create_task_assigned_notification_event
+    recipient_user_id = assigned_to_id || membership&.user_id
+    return if recipient_user_id.blank?
+
+    NotificationEvent.create!(
+      event_type: "task_assigned",
+      recipient_user_id: recipient_user_id,
+      actor_user_id: assigned_by_id,
+      group_id: task&.group_id,
+      task_id: task_id,
+      assignment_id: id,
+      occurred_at: assigned_at || updated_at || created_at,
+      payload: {
+        message: "#{task&.name}が割り当てられました"
+      }
+    )
   end
 end

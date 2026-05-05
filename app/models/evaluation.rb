@@ -5,7 +5,6 @@ class Evaluation < ApplicationRecord
              class_name: 'User',
              foreign_key: 'evaluator_id'
 
-  # バリデーション
   # 評価スコア（必須・1〜5）
   validates :score,
             presence: true,

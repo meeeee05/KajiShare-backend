@@ -14,7 +14,6 @@ class RecurringTask < ApplicationRecord
               greater_than_or_equal_to: 1,
               less_than_or_equal_to: 5
             }
-  validates :schedule_type, inclusion: { in: SCHEDULE_TYPES }
   validates :starts_on, presence: true
 
   validates :day_of_week,
@@ -22,14 +21,5 @@ class RecurringTask < ApplicationRecord
             presence: true,
             if: -> { schedule_type.in?(SCHEDULE_TYPES) }
 
-  validate :interval_days_must_be_blank
 
-  private
-
-  # N日おき設定は廃止。interval_daysは受け付けない。
-  def interval_days_must_be_blank
-    return if interval_days.blank?
-
-    errors.add(:interval_days, "この設定は利用できません")
-  end
 end

@@ -18,8 +18,8 @@ module Api
                                   .includes(:task, membership: :user)
                                   .order(:due_date)
                       else
-                        return handle_unprocessable_entity(["group_id または task_id が必要です"])
-                      end
+        return handle_unprocessable_entity(["group_id または task_id が必要です"])
+        end
 
         render json: assignments, each_serializer: AssignmentSerializer
       end
@@ -41,7 +41,8 @@ module Api
           end
           assignment.membership_id = target_membership.id
           assignment.assigned_to_id = target_membership.user_id
-          assignment.assigned_by_id ||= current_user.id
+          assignment.assigned_by_id = current_user.id
+          assignment.assigned_at = Time.current
 
           if assignment.save
             Rails.logger.info "Assignment created: (ID: #{assignment.id}) for Task '#{@task.name}' by user #{current_user.name}"
@@ -63,7 +64,9 @@ module Api
           if target_membership
             @assignment.membership_id = target_membership.id
             @assignment.assigned_to_id = target_membership.user_id
-            @assignment.assigned_by_id ||= current_user.id
+            # 割り振り操作が行われたときは、同一担当者でも通知イベント用に時刻を更新する
+            @assignment.assigned_by_id = current_user.id
+            @assignment.assigned_at = Time.current
           end
 
           if @assignment.update(assignment_params)
@@ -121,7 +124,7 @@ module Api
       
       # Strong Parameters(以下パラメータを受け入れ)
       def assignment_params
-        params.require(:assignment).permit(:membership_id, :assigned_to_id, :due_date, :completed_date, :comment, :status)
+        params.require(:assignment).permit(:due_date, :completed_date, :comment, :status)
       end
 
       # create時の割り当て先メンバーシップを解決

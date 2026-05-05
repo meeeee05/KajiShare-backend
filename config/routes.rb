@@ -44,7 +44,7 @@ Rails.application.routes.draw do
         end
       end
       resources :evaluations, only: [:create, :update, :show, :index, :destroy]
-      resources :notifications, only: [:index]
+      resources :notifications, only: [:index], controller: :notification_events
     end
   end
 

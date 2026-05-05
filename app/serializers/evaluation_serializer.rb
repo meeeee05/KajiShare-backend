@@ -1,6 +1,6 @@
 class EvaluationSerializer < ActiveModel::Serializer
   attributes :id, :score, :feedback, :evaluator_id, :evaluated_user_id, :task_id, :assignment_status,
-             :assignment_task_name, :evaluated_user_name, :evaluator_name, :score_label
+             :assignment_task_name, :evaluated_user_name, :evaluator_name
 
   # 関連データ
   belongs_to :assignment, serializer: AssignmentSerializer
@@ -33,17 +33,5 @@ class EvaluationSerializer < ActiveModel::Serializer
   # 評価者のユーザー名を取得
   def evaluator_name
     object.evaluator&.name
-  end
-
-  # スコア
-  def score_label
-    score_labels = {
-      5 => 'Excellent',
-      4 => 'Good', 
-      3 => 'Average',
-      2 => 'Below Average',
-      1 => 'Poor'
-    }
-    score_labels[object.score] || 'Unrated'
   end
 end

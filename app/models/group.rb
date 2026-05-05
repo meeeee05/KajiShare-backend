@@ -20,7 +20,6 @@ class Group < ApplicationRecord
   before_validation :normalize_assign_mode
   after_create :ensure_creator_membership
 
-  # バリデーション
   validates :name,
             presence: true,
             length: { maximum: 100 }
@@ -51,7 +50,7 @@ class Group < ApplicationRecord
     end while self.class.exists?(share_key: share_key)
   end
 
-  # フロントの表記ゆれを既存保存値へ正規化
+  # フロントの表記を既存保存値へ正規化
   def normalize_assign_mode
     return if assign_mode.blank?
 

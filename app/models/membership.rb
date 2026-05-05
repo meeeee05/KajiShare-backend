@@ -8,7 +8,6 @@ class Membership < ApplicationRecord
   # ロール管理
   enum :role, { member: "member", admin: "admin" }
 
-  #　バリデーション
   validates :role, presence: true
 
   validates :user_id, uniqueness:

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_26_132000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_05_174500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -26,6 +26,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_26_132000) do
     t.bigint "membership_id", null: false
     t.string "status", default: "着手前"
     t.bigint "completed_by_user_id"
+    t.datetime "assigned_at"
+    t.index ["assigned_at"], name: "index_assignments_on_assigned_at"
     t.index ["completed_by_user_id"], name: "index_assignments_on_completed_by_user_id"
     t.index ["membership_id"], name: "index_assignments_on_membership_id"
     t.index ["task_id", "membership_id"], name: "index_assignments_on_task_id_and_membership_id", unique: true
@@ -63,6 +65,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_26_132000) do
     t.boolean "active"
     t.index ["group_id"], name: "index_memberships_on_group_id"
     t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
+  create_table "notification_events", force: :cascade do |t|
+    t.string "event_type", null: false
+    t.bigint "recipient_user_id", null: false
+    t.bigint "actor_user_id"
+    t.bigint "group_id"
+    t.bigint "task_id"
+    t.bigint "assignment_id"
+    t.datetime "occurred_at", null: false
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_notification_events_on_assignment_id"
+    t.index ["recipient_user_id", "event_type", "occurred_at"], name: "index_notification_events_on_recipient_event_time"
   end
 
   create_table "recurring_tasks", force: :cascade do |t|
@@ -117,6 +134,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_26_132000) do
   add_foreign_key "groups", "users", column: "created_by_id"
   add_foreign_key "memberships", "groups"
   add_foreign_key "memberships", "users"
+  add_foreign_key "notification_events", "assignments"
+  add_foreign_key "notification_events", "groups"
+  add_foreign_key "notification_events", "tasks"
+  add_foreign_key "notification_events", "users", column: "actor_user_id"
+  add_foreign_key "notification_events", "users", column: "recipient_user_id"
   add_foreign_key "recurring_tasks", "groups"
   add_foreign_key "recurring_tasks", "users", column: "created_by_id"
   add_foreign_key "tasks", "groups"

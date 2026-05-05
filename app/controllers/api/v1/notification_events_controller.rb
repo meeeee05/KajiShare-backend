@@ -1,8 +1,8 @@
 module Api
   module V1
-    class NotificationsController < ApplicationController
+    class NotificationEventsController < ApplicationController
       DEFAULT_LIMIT = 50
-      MAX_LIMIT = 100
+      MAX_LIMIT = 1000
 
       before_action :authenticate_user!
 
@@ -10,12 +10,18 @@ module Api
       def index
         limit = normalized_limit
         notifications = build_notifications(limit)
+        latest_task_assigned_event_id = latest_task_assigned_event_id_for_current_user
 
         render json: {
           success: true,
           data: {
+            viewer_user_id: current_user.id,
+            viewer_google_sub: current_user.google_sub,
+            mode: records_mode? ? "records" : "default",
             notifications: notifications,
-            total: notifications.size
+            total: notifications.size,
+            latest_task_assigned_event_id: latest_task_assigned_event_id,
+            server_time: Time.current.iso8601
           }
         }
       end
@@ -32,6 +38,8 @@ module Api
 
       # 現在のユーザーに関連する最新の通知を取得
       def build_notifications(limit)
+        return task_assigned_notifications(limit) if task_assigned_only? || records_mode?
+
         items = []
         items.concat(group_join_notifications(limit))
         items.concat(task_assigned_notifications(limit))
@@ -65,23 +73,27 @@ module Api
 
       # 自分にタスクが割り当てられた通知
       def task_assigned_notifications(limit)
-        Assignment
-          .includes(:task, membership: :group)
-          .joins(:membership)
-          .where(memberships: { user_id: current_user.id })
-          .order(created_at: :desc)
+        task_assigned_notifications_from_events(limit)
+      end
+
+      def task_assigned_notifications_from_events(limit)
+        scope = NotificationEvent.where(event_type: "task_assigned", recipient_user_id: current_user.id)
+        scope = scope.where("id > ?", normalized_since_id) if normalized_since_id.present?
+
+        scope
+          .order(occurred_at: :desc, id: :desc)
           .limit(limit)
-          .map do |assignment|
+          .map do |event|
             build_notification(
               key: "task_assigned",
-              record_id: assignment.id,
+              record_id: event.id,
               type: "task_assigned",
               title: "新規タスクが割り当てられました",
-              message: "#{assignment.task.name}が割り当てられました",
-              occurred_at: assignment.created_at,
-              group_id: assignment.task.group_id,
-              task_id: assignment.task_id,
-              assignment_id: assignment.id
+              message: event.payload["message"].presence || "タスクが割り当てられました",
+              occurred_at: event.occurred_at,
+              group_id: event.group_id,
+              task_id: event.task_id,
+              assignment_id: event.assignment_id
             )
           end
       end
@@ -125,6 +137,33 @@ module Api
           message: message,
           occurred_at: occurred_at
         }.merge(extra)
+      end
+
+      def normalized_since_id
+        raw = params[:since_id]
+        return nil if raw.blank?
+
+        # フロントが "task_assigned_123" を渡しても末尾の数値を解釈できるようにする
+        token = raw.to_s
+        numeric = token[/\d+\z/]&.to_i
+        return nil if numeric.blank? || numeric <= 0
+
+        numeric
+      end
+
+      def task_assigned_only?
+        value = params[:type] || params[:types] || params[:only]
+        value.to_s == "task_assigned"
+      end
+
+      def records_mode?
+        ActiveModel::Type::Boolean.new.cast(params[:for_records])
+      end
+
+      def latest_task_assigned_event_id_for_current_user
+        NotificationEvent
+          .where(event_type: "task_assigned", recipient_user_id: current_user.id)
+          .maximum(:id)
       end
     end
   end
