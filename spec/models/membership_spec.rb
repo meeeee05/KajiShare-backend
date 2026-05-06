@@ -1,5 +1,4 @@
 require 'rails_helper'
-
 # Membershipモデル関連付け
 RSpec.describe Membership, type: :model do
   describe 'associations' do

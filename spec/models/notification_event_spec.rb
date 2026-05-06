@@ -1,7 +1,42 @@
 require 'rails_helper'
+# NotificationEventモデル関連付け
+RSpec.describe NotificationEvent, type: :model do
+  describe 'associations' do
+    it { should belong_to(:recipient_user).class_name('User').with_foreign_key('recipient_user_id') }
+    it { should belong_to(:actor_user).class_name('User').with_foreign_key('actor_user_id').optional }
+    it { should belong_to(:group).optional }
+    it { should belong_to(:task).optional }
+    it { should belong_to(:assignment).optional }
+  end
 
-RSpec.describe Assignment, type: :model do
-  describe 'task_assigned notification events' do
+  # 正常系：入力値検証（以下3項目が未記入であれば通知しない）
+  describe 'validations' do
+    subject { build(:notification_event) }
+
+    it { should validate_presence_of(:event_type) }
+    it { should validate_presence_of(:recipient_user_id) }
+    it { should validate_presence_of(:occurred_at) }
+  end
+
+  #　正常系：通知作成
+  describe 'scopes' do
+    it 'returns only task_assigned events' do
+      matched = create(:notification_event, event_type: 'task_assigned')
+      create(:notification_event, event_type: 'task_evaluated')
+
+      expect(NotificationEvent.task_assigned).to contain_exactly(matched)
+    end
+  end
+
+  # 正常系：有効なNotificationEventが作成できることを確認
+  describe 'factory' do
+    it 'creates a valid notification event' do
+      expect(create(:notification_event)).to be_valid
+    end
+  end
+
+  # 正常系：assignmentからのtask_assignedイベントの作成を確認
+  describe 'task_assigned notification events from assignment' do
     let!(:group) { create(:group) }
     let!(:assignee_user) { create(:user) }
     let!(:other_user) { create(:user) }

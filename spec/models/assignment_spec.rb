@@ -1,5 +1,4 @@
 require 'rails_helper'
-
 # Assignmentモデル関連付けテスト
 RSpec.describe Assignment, type: :model do
   describe 'associations' do

@@ -1,4 +1,6 @@
 class NotificationEvent < ApplicationRecord
+
+  # model関連付け
   belongs_to :recipient_user, class_name: "User", foreign_key: :recipient_user_id
   belongs_to :actor_user, class_name: "User", foreign_key: :actor_user_id, optional: true
   belongs_to :group, optional: true
@@ -7,5 +9,6 @@ class NotificationEvent < ApplicationRecord
 
   validates :event_type, :recipient_user_id, :occurred_at, presence: true
 
+  # タスク割り当て通知のみを取得
   scope :task_assigned, -> { where(event_type: "task_assigned") }
 end

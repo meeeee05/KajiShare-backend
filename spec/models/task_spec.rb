@@ -1,6 +1,5 @@
 # spec/models/task_spec.rb
 require 'rails_helper'
-
 # Taskモデル関連付けテスト
 RSpec.describe Task, type: :model do
   describe 'validations' do

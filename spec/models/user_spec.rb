@@ -1,6 +1,5 @@
 # spec/models/user_spec.rb
 require 'rails_helper'
-
 # Userモデル関連付けテスト
 RSpec.describe User, type: :model do
   describe 'associations' do

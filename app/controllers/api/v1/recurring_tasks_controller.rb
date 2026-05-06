@@ -12,7 +12,7 @@ module Api
       # GET /api/v1/groups/:group_id/recurring_tasks
       def index
         recurring_tasks = @group.recurring_tasks.order(:id)
-        render json: recurring_tasks, each_serializer: RecurringTaskSerializer
+        render json: recurring_tasks.as_json(only: recurring_task_response_attributes)
       end
 
       # GET /api/v1/recurring_tasks/:id
@@ -90,7 +90,25 @@ module Api
 
       # 定期タスクの成功レスポンスを共通化
       def render_recurring_task_success(recurring_task, status = :ok)
-        render json: recurring_task, serializer: RecurringTaskSerializer, status: status
+        render json: recurring_task.as_json(only: recurring_task_response_attributes), status: status
+      end
+
+      # 定期タスクのレスポンスに含める属性
+      def recurring_task_response_attributes
+        [
+          :id,
+          :group_id,
+          :created_by_id,
+          :name,
+          :description,
+          :point,
+          :schedule_type,
+          :day_of_week,
+          :starts_on,
+          :active,
+          :created_at,
+          :updated_at
+        ]
       end
 
       # グループIDを取得

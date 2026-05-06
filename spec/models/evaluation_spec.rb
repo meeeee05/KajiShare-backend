@@ -1,6 +1,5 @@
 # spec/models/evaluation_spec.rb
 require 'rails_helper'
-
 # Evaluationモデル関連付けテスト
 RSpec.describe Evaluation, type: :model do
   describe 'associations' do
