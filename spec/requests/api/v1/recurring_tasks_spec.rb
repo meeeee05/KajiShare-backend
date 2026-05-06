@@ -18,10 +18,12 @@ RSpec.describe 'Api::V1::RecurringTasks', type: :request do
       .and_return(true)
   end
 
+  # 共通系：403 チェックの重複を減らす
   shared_examples 'forbidden' do
     it { expect(response).to have_http_status(:forbidden) }
   end
 
+  # 正常系：メンバー権限があるならrecurring_tasksを取得できる
   describe 'GET /api/v1/groups/:group_id/recurring_tasks' do
     let!(:recurring_task) { create(:recurring_task, group: group, creator: admin_user) }
 
@@ -50,6 +52,7 @@ RSpec.describe 'Api::V1::RecurringTasks', type: :request do
     end
   end
 
+  # 正常系：メンバー権限なら詳細1件を見られる
   describe 'GET /api/v1/recurring_tasks/:id' do
     let!(:recurring_task) { create(:recurring_task, group: group, creator: admin_user) }
 
@@ -77,6 +80,7 @@ RSpec.describe 'Api::V1::RecurringTasks', type: :request do
     end
   end
 
+  # 正常系：管理者権限があるならrecurring_tasksを作成できる
   describe 'POST /api/v1/groups/:group_id/recurring_tasks' do
     let(:valid_params) do
       {
@@ -111,6 +115,7 @@ RSpec.describe 'Api::V1::RecurringTasks', type: :request do
         expect(json['created_by_id']).to eq(admin_user.id)
       end
 
+      # 正常系：無効なパラメータで作成しようとした場合、422を返す
       it 'returns 422 when params are invalid' do
         invalid_params = {
           recurring_task: {
@@ -139,6 +144,7 @@ RSpec.describe 'Api::V1::RecurringTasks', type: :request do
     end
   end
 
+  # 正常系：管理者権限があるならrecurring_tasksを更新できる
   describe 'PATCH /api/v1/recurring_tasks/:id' do
     let!(:recurring_task) { create(:recurring_task, group: group, creator: admin_user) }
 
@@ -174,6 +180,7 @@ RSpec.describe 'Api::V1::RecurringTasks', type: :request do
     end
   end
 
+  # 正常系：管理者権限があるならrecurring_tasksを削除できる
   describe 'DELETE /api/v1/recurring_tasks/:id' do
     let!(:recurring_task) { create(:recurring_task, group: group, creator: admin_user) }
 

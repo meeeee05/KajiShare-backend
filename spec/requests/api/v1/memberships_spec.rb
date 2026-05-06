@@ -72,6 +72,7 @@ RSpec.describe "Api::V1::Memberships", type: :request do
     end
   end
 
+  # 正常系：認証を再有効化
   describe "POST /api/v1/memberships" do
     let!(:new_user) { create(:user) }
     let(:valid_params) do

@@ -27,6 +27,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     end
   end
 
+  # 正常系：認証を再有効化
   describe "Authentication" do
     before do
       allow_any_instance_of(Api::V1::EvaluationsController)

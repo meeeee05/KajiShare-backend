@@ -157,8 +157,7 @@ module Api
 
       # タスク割り当て通知のみを取得
       def task_assigned_only?
-        value = params[:type] || params[:types] || params[:only]
-        value.to_s == "task_assigned"
+        params[:type].to_s == "task_assigned"
       end
 
       def records_mode?

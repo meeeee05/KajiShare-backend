@@ -184,6 +184,7 @@ RSpec.describe "Api::V1::Tasks", type: :request do
         expect(json["data"]["attributes"]["name"]).to eq("New Task")
       end
 
+      # 正常系：同一グループ内でのタスク名重複エラーの確認
       it "returns 422 when creating duplicate task name in same group" do
         create(:membership, user: user, group: group, role: 'member', active: true, workload_ratio: 100)
         create(:task, group: group, name: "Duplicate Task")
