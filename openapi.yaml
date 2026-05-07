@@ -1,0 +1,1296 @@
+openapi: 3.0.3
+info:
+  title: KajiShare Backend API
+  version: 1.0.0
+  description: |
+    KajiShare backend API specification.
+
+    Notes:
+    - Base path is /api/v1 for application APIs.
+    - Authentication uses Bearer token.
+    - Evaluation input keys are `score` and `feedback`.
+    - Legacy aliases like `point` / `comment` are not accepted for evaluations.
+servers:
+  - url: http://localhost:3001
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Groups
+  - name: Memberships
+  - name: Tasks
+  - name: Assignments
+  - name: Evaluations
+  - name: RecurringTasks
+  - name: Notifications
+
+security:
+  - bearerAuth: []
+
+paths:
+  /up:
+    get:
+      tags: [Auth]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+
+  /api/test:
+    get:
+      tags: [Auth]
+      summary: API test endpoint
+      security: []
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/auth/google:
+    post:
+      tags: [Auth]
+      summary: Authenticate with Google
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_token:
+                  type: string
+                token:
+                  type: string
+              additionalProperties: true
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/guest:
+    post:
+      tags: [Auth]
+      summary: Authenticate as guest
+      security: []
+      responses:
+        "200":
+          description: Guest authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /api/v1/users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/users:
+    get:
+      tags: [Users]
+      summary: List users
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: "#/components/schemas/UserCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: "#/components/schemas/UserUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Users]
+      summary: Delete user
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Deleted
+
+  /api/v1/groups:
+    get:
+      tags: [Groups]
+      summary: List groups for current user
+      responses:
+        "200":
+          description: Group list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+    post:
+      tags: [Groups]
+      summary: Create group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group:
+                  $ref: "#/components/schemas/GroupCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/groups/{id}:
+    get:
+      tags: [Groups]
+      summary: Get group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Group detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Groups]
+      summary: Update group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group:
+                  $ref: "#/components/schemas/GroupUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Groups]
+      summary: Delete group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/groups/join:
+    post:
+      tags: [Groups]
+      summary: Join group by share key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  type: object
+                  properties:
+                    share_key:
+                      type: string
+              required: [membership]
+      responses:
+        "201":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/groups/{id}/leave:
+    post:
+      tags: [Groups]
+      summary: Leave group
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Left group
+    delete:
+      tags: [Groups]
+      summary: Leave group (DELETE)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Left group
+
+  /api/v1/groups/{group_id}/memberships:
+    get:
+      tags: [Memberships]
+      summary: List memberships by group
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+      responses:
+        "200":
+          description: Membership list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+    post:
+      tags: [Memberships]
+      summary: Create membership in group
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  $ref: "#/components/schemas/MembershipCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/memberships:
+    get:
+      tags: [Memberships]
+      summary: List memberships
+      parameters:
+        - in: query
+          name: group_id
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: Membership list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+    post:
+      tags: [Memberships]
+      summary: Create membership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  $ref: "#/components/schemas/MembershipCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+
+  /api/v1/memberships/{id}:
+    get:
+      tags: [Memberships]
+      summary: Get membership
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Memberships]
+      summary: Update membership
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  $ref: "#/components/schemas/MembershipUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+    delete:
+      tags: [Memberships]
+      summary: Delete membership
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: Deleted
+
+  /api/v1/memberships/{id}/change_role:
+    patch:
+      tags: [Memberships]
+      summary: Change membership role
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [admin, member]
+              required: [role]
+      responses:
+        "200":
+          description: Role changed
+
+  /api/v1/groups/{group_id}/tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks by group
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [completed, incomplete]
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      tags: [Tasks]
+      summary: Create task
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task:
+                  $ref: "#/components/schemas/TaskCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /api/v1/tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Get task
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Task detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    patch:
+      tags: [Tasks]
+      summary: Update task
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task:
+                  $ref: "#/components/schemas/TaskUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      tags: [Tasks]
+      summary: Delete task
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Deleted
+
+  /api/v1/groups/{group_id}/assignments:
+    get:
+      tags: [Assignments]
+      summary: List assignments by group
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+      responses:
+        "200":
+          description: Assignment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+
+  /api/v1/tasks/{task_id}/assignments:
+    get:
+      tags: [Assignments]
+      summary: List assignments by task
+      parameters:
+        - $ref: "#/components/parameters/TaskIdPath"
+      responses:
+        "200":
+          description: Assignment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+    post:
+      tags: [Assignments]
+      summary: Create assignment
+      parameters:
+        - $ref: "#/components/parameters/TaskIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignment:
+                  $ref: "#/components/schemas/AssignmentCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+  /api/v1/assignments:
+    get:
+      tags: [Assignments]
+      summary: List assignments
+      parameters:
+        - in: query
+          name: group_id
+          schema:
+            $ref: "#/components/schemas/Id"
+        - in: query
+          name: task_id
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: Assignment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+
+  /api/v1/assignments/{id}:
+    get:
+      tags: [Assignments]
+      summary: Get assignment
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+    patch:
+      tags: [Assignments]
+      summary: Update assignment
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignment:
+                  $ref: "#/components/schemas/AssignmentUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+    delete:
+      tags: [Assignments]
+      summary: Delete assignment
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Deleted
+
+  /api/v1/evaluations:
+    get:
+      tags: [Evaluations]
+      summary: List evaluations
+      description: Returns evaluations for groups where current user has active membership.
+      responses:
+        "200":
+          description: Evaluation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evaluation"
+    post:
+      tags: [Evaluations]
+      summary: Create evaluation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                evaluation:
+                  $ref: "#/components/schemas/EvaluationCreateRequest"
+              required: [evaluation]
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/evaluations/{id}:
+    get:
+      tags: [Evaluations]
+      summary: Get evaluation
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Evaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Evaluations]
+      summary: Update evaluation
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                evaluation:
+                  $ref: "#/components/schemas/EvaluationUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+    delete:
+      tags: [Evaluations]
+      summary: Delete evaluation
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Deleted
+
+  /api/v1/assignments/{assignment_id}/evaluations:
+    post:
+      tags: [Evaluations]
+      summary: Create evaluation for assignment
+      parameters:
+        - $ref: "#/components/parameters/AssignmentIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                evaluation:
+                  type: object
+                  properties:
+                    score:
+                      type: integer
+                    feedback:
+                      type: string
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+
+  /api/v1/groups/{group_id}/recurring_tasks:
+    get:
+      tags: [RecurringTasks]
+      summary: List recurring tasks by group
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+      responses:
+        "200":
+          description: Recurring task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecurringTask"
+    post:
+      tags: [RecurringTasks]
+      summary: Create recurring task
+      parameters:
+        - $ref: "#/components/parameters/GroupIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recurring_task:
+                  $ref: "#/components/schemas/RecurringTaskCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTask"
+
+  /api/v1/recurring_tasks/{id}:
+    get:
+      tags: [RecurringTasks]
+      summary: Get recurring task
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Recurring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTask"
+    patch:
+      tags: [RecurringTasks]
+      summary: Update recurring task
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recurring_task:
+                  $ref: "#/components/schemas/RecurringTaskUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags: [RecurringTasks]
+      summary: Delete recurring task
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Deleted
+
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notification events
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [task_assigned]
+        - in: query
+          name: for_records
+          schema:
+            type: boolean
+        - in: query
+          name: since_id
+          schema:
+            type: string
+          description: Numeric ID or prefixed format like task_assigned_123
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+      responses:
+        "200":
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationEvent"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        $ref: "#/components/schemas/Id"
+    GroupIdPath:
+      in: path
+      name: group_id
+      required: true
+      schema:
+        $ref: "#/components/schemas/Id"
+    TaskIdPath:
+      in: path
+      name: task_id
+      required: true
+      schema:
+        $ref: "#/components/schemas/Id"
+    AssignmentIdPath:
+      in: path
+      name: assignment_id
+      required: true
+      schema:
+        $ref: "#/components/schemas/Id"
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Id:
+      oneOf:
+        - type: integer
+        - type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+        status:
+          type: integer
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        name:
+          type: string
+        email:
+          type: string
+        picture:
+          type: string
+        google_sub:
+          type: string
+        account_type:
+          type: string
+
+    UserCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        picture:
+          type: string
+        google_sub:
+          type: string
+
+    UserUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/UserCreateRequest"
+
+    Group:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        name:
+          type: string
+        share_key:
+          type: string
+        assign_mode:
+          type: string
+        balance_type:
+          type: string
+        active:
+          type: boolean
+        created_by_id:
+          $ref: "#/components/schemas/Id"
+
+    GroupCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        share_key:
+          type: string
+        assign_mode:
+          type: string
+        balance_type:
+          type: string
+        active:
+          type: boolean
+
+    GroupUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/GroupCreateRequest"
+
+    Membership:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        user_id:
+          $ref: "#/components/schemas/Id"
+        group_id:
+          $ref: "#/components/schemas/Id"
+        role:
+          type: string
+          enum: [admin, member]
+        workload_ratio:
+          type: number
+          nullable: true
+        active:
+          type: boolean
+
+    MembershipCreateRequest:
+      type: object
+      properties:
+        user_id:
+          $ref: "#/components/schemas/Id"
+        group_id:
+          $ref: "#/components/schemas/Id"
+        role:
+          type: string
+          enum: [admin, member]
+        workload_ratio:
+          type: number
+        active:
+          type: boolean
+        share_key:
+          type: string
+
+    MembershipUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/MembershipCreateRequest"
+
+    Task:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        group_id:
+          $ref: "#/components/schemas/Id"
+        name:
+          type: string
+        description:
+          type: string
+        point:
+          type: integer
+        source_recurring_task_id:
+          $ref: "#/components/schemas/Id"
+        scheduled_for:
+          type: string
+          format: date
+        auto_generated:
+          type: boolean
+
+    TaskCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        point:
+          type: integer
+
+    TaskUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/TaskCreateRequest"
+
+    Assignment:
+      type: object
+      required: [task_id]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        task_id:
+          $ref: "#/components/schemas/Id"
+        membership_id:
+          $ref: "#/components/schemas/Id"
+        assigned_to_id:
+          $ref: "#/components/schemas/Id"
+        assigned_by_id:
+          $ref: "#/components/schemas/Id"
+        due_date:
+          type: string
+          format: date
+        completed_date:
+          type: string
+          format: date
+          nullable: true
+        comment:
+          type: string
+        status:
+          type: string
+        completed_by_user_id:
+          $ref: "#/components/schemas/Id"
+        assigned_at:
+          type: string
+          format: date-time
+
+    AssignmentCreateRequest:
+      type: object
+      properties:
+        membership_id:
+          $ref: "#/components/schemas/Id"
+        assigned_to_id:
+          $ref: "#/components/schemas/Id"
+        due_date:
+          type: string
+          format: date
+        completed_date:
+          type: string
+          format: date
+          nullable: true
+        comment:
+          type: string
+        status:
+          type: string
+
+    AssignmentUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/AssignmentCreateRequest"
+
+    Evaluation:
+      type: object
+      required: [task_id]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        assignment_id:
+          $ref: "#/components/schemas/Id"
+        task_id:
+          $ref: "#/components/schemas/Id"
+        evaluator_id:
+          $ref: "#/components/schemas/Id"
+        evaluated_user_id:
+          $ref: "#/components/schemas/Id"
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        feedback:
+          type: string
+          maxLength: 100
+        assignment_status:
+          type: string
+        assignment_task_name:
+          type: string
+        evaluated_user_name:
+          type: string
+        evaluator_name:
+          type: string
+
+    EvaluationCreateRequest:
+      type: object
+      required: [score]
+      properties:
+        assignment_id:
+          $ref: "#/components/schemas/Id"
+        score:
+          type: integer
+        feedback:
+          type: string
+
+    EvaluationUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/EvaluationCreateRequest"
+
+    RecurringTask:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        group_id:
+          $ref: "#/components/schemas/Id"
+        created_by_id:
+          $ref: "#/components/schemas/Id"
+        name:
+          type: string
+        description:
+          type: string
+        point:
+          type: integer
+        schedule_type:
+          type: string
+          enum: [daily, weekly, interval]
+        day_of_week:
+          type: integer
+          nullable: true
+        interval_days:
+          type: integer
+          nullable: true
+        starts_on:
+          type: string
+          format: date
+        active:
+          type: boolean
+
+    RecurringTaskCreateRequest:
+      type: object
+      required: [name, point, schedule_type, starts_on]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        point:
+          type: integer
+        schedule_type:
+          type: string
+        day_of_week:
+          type: integer
+        interval_days:
+          type: integer
+        starts_on:
+          type: string
+          format: date
+        active:
+          type: boolean
+
+    RecurringTaskUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/RecurringTaskCreateRequest"
+
+    NotificationEvent:
+      type: object
+      properties:
+        event_type:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        recipient_user_id:
+          $ref: "#/components/schemas/Id"
+        actor_user_id:
+          $ref: "#/components/schemas/Id"
+        group_id:
+          $ref: "#/components/schemas/Id"
+        task_id:
+          $ref: "#/components/schemas/Id"
+        assignment_id:
+          $ref: "#/components/schemas/Id"
+        payload:
+          type: object
+          additionalProperties: true
