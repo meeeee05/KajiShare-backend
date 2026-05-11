@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::API
+  before_action :enforce_allowed_origin_in_production
+
   # 例外ハンドリングをキャッチ
   # 予期しないエラー、DB接続エラーなどは500で返す
   rescue_from StandardError, with: :handle_internal_error
@@ -84,6 +86,37 @@ class ApplicationController < ActionController::API
   end
 
   private
+
+    def enforce_allowed_origin_in_production
+      return unless Rails.env.production?
+      return unless request.path.start_with?("/api")
+      return if allowed_request_origin?
+
+      render json: {
+        error: "Forbidden",
+        message: "許可されていないアクセス元です",
+        status: 403
+      }, status: :forbidden
+    end
+
+    def allowed_request_origin?
+      request_origin = request.origin
+      return false if request_origin.blank?
+
+      allowed_origins.include?(request_origin)
+    end
+
+    def allowed_origins
+      default_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://localhost:8080"
+      ]
+      configured_origins = ENV.fetch("CORS_ORIGINS", ENV.fetch("FRONTEND_URL", "")).split(",").map(&:strip).reject(&:blank?)
+
+      default_origins + configured_origins
+    end
 
     def guest_token_verifier
       Rails.application.message_verifier(:guest_auth)

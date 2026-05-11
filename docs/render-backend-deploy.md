@@ -33,6 +33,7 @@ RAILS_MAX_THREADS=5
 ```
 
 Vercel側のURLがまだない場合は、最初は `CORS_ORIGINS` を空で作成して、フロントのデプロイ後に追加する。
+APIはproductionでは許可済みOrigin以外を403にするため、Vercelデプロイ後は必ず設定する。
 
 ## 4. Migration
 
@@ -52,5 +53,6 @@ Backend URLが `https://kaji-share-backend.onrender.com` の場合:
 
 ```sh
 curl https://kaji-share-backend.onrender.com/up
-curl https://kaji-share-backend.onrender.com/api/test
+curl -X POST https://kaji-share-backend.onrender.com/api/v1/auth/guest \
+  -H "Origin: https://<your-frontend>.vercel.app"
 ```
