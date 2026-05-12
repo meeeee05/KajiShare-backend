@@ -91,6 +91,7 @@ class ApplicationController < ActionController::API
       return unless Rails.env.production?
       return unless request.path.start_with?("/api")
       return if allowed_request_origin?
+      return if valid_frontend_api_secret?
 
       render json: {
         error: "Forbidden",
@@ -104,6 +105,16 @@ class ApplicationController < ActionController::API
       return false if request_origin.blank?
 
       allowed_origins.include?(request_origin)
+    end
+
+    def valid_frontend_api_secret?
+      expected_secret = ENV["FRONTEND_API_SECRET"].to_s
+      return false if expected_secret.blank?
+
+      provided_secret = request.headers["X-Frontend-Api-Secret"].to_s
+      return false if provided_secret.blank?
+
+      ActiveSupport::SecurityUtils.secure_compare(provided_secret, expected_secret)
     end
 
     def allowed_origins
