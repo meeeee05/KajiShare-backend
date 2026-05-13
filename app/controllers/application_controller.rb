@@ -93,6 +93,17 @@ class ApplicationController < ActionController::API
       return if allowed_request_origin?
       return if valid_frontend_api_secret?
 
+      Rails.logger.info(
+        [
+          "API access rejected",
+          "path=#{request.path}",
+          "origin=#{request.origin.presence || '(blank)'}",
+          "allowed_origin=#{allowed_request_origin?}",
+          "frontend_secret_configured=#{ENV['FRONTEND_API_SECRET'].present?}",
+          "frontend_secret_header_present=#{request.headers['X-Frontend-Api-Secret'].present?}"
+        ].join(" ")
+      )
+
       render json: {
         error: "Forbidden",
         message: "許可されていないアクセス元です",
