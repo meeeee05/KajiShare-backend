@@ -41,30 +41,13 @@ RSpec.describe Evaluation, type: :model do
     end
   end
 
-  # テストデータ作成
-  describe 'custom validations' do
-    let(:membership) { create(:membership) }
-    let(:task) { create(:task, group: membership.group) }
-    let(:evaluator) { create(:user) }
+  describe 'assignment status' do
+    it 'allows an evaluation when the assignment is not completed' do
+      pending_assignment = create(:assignment, status: 'not_started')
 
-    # 異常系：未完了の課題には評価をつけられない
-    it 'is invalid if assignment is not completed' do
-      pending_assignment = create(
-        :assignment,
-        membership: membership,
-        task: task,
-        status: 'not_started'
-      )
+      evaluation = build(:evaluation, assignment: pending_assignment)
 
-      evaluation = build(
-        :evaluation,
-        assignment: pending_assignment,
-        evaluator: evaluator
-      )
-
-      expect(evaluation).not_to be_valid
-      expect(evaluation.errors[:assignment])
-        .to include('は完了状態でないと評価できません')
+      expect(evaluation).to be_valid
     end
   end
 

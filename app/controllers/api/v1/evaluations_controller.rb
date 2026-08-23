@@ -75,7 +75,7 @@ module Api
       def set_evaluation
         @evaluation = Evaluation.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        handle_not_found("ID: #{params[:id]} の評価が見つかりません")
+        handle_not_found("対象の評価が見つかりません")
       end
 
       # 表示・更新を許可

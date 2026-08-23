@@ -195,7 +195,7 @@ RSpec.describe "Api::V1::Tasks", type: :request do
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json["errors"]).to be_an(Array)
-        expect(json["errors"].any? { |e| e.include?("このグループ内ですでに登録されています") }).to be(true)
+        expect(json["errors"]).to include("同じグループに同名タスクが既にあります")
       end
 
       # 異常系：パラメータ不正
@@ -333,7 +333,7 @@ RSpec.describe "Api::V1::Tasks", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(json["error"]).to eq("Unprocessable Entity")
-      expect(json["message"]).to eq("検証に失敗しました")
+      expect(json["message"]).to eq("入力内容に誤りがあります")
       expect(json["errors"]).to be_an(Array)
       expect(json["errors"].join).to match(/greater than or equal to 1|1以上|greater than 0/)
     end

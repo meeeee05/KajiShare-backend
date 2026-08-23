@@ -20,7 +20,7 @@ RSpec.describe Task, type: :model do
       duplicate = build(:task, group: existing.group, name: existing.name)
 
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:name]).to include('はこのグループ内ですでに登録されています')
+      expect(duplicate.errors[:base]).to include('同じグループに同名タスクが既にあります')
     end
 
     # 正常系：別グループなら同名タスクを作成可能

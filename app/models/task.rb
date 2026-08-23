@@ -21,12 +21,7 @@ class Task < ApplicationRecord
   }
 
   validates :name, presence: true, length: { maximum: 50 }
-  validates :name,
-            uniqueness: {
-              scope: :group_id,
-              message: "^同じグループに同名タスクが既にあります"
-            },
-            if: :manual_task?
+  validate :manual_task_name_must_be_unique_within_group, if: :manual_task?
   validates :description, length: { maximum: 50 }, allow_blank: true
   validates :point,
             presence: true,
@@ -41,5 +36,17 @@ class Task < ApplicationRecord
   # 手動で生成したtaskか自動で生成されたtaskか判別
   def manual_task?
     scheduled_for.nil?
+  end
+
+  def manual_task_name_must_be_unique_within_group
+    return if name.blank? || group_id.blank?
+
+    duplicate_exists = self.class
+                           .where(group_id: group_id, name: name, scheduled_for: nil)
+                           .where.not(id: id)
+                           .exists?
+    return unless duplicate_exists
+
+    errors.add(:base, "同じグループに同名タスクが既にあります")
   end
 end

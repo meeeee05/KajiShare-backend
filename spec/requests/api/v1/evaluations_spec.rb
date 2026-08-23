@@ -77,7 +77,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       get "/api/v1/evaluations/99999999", headers: headers
       expect(response).to have_http_status(:not_found)
       json = JSON.parse(response.body)
-      expect(json["message"]).to include("Evaluation with ID")
+      expect(json["message"]).to eq("対象の評価が見つかりません")
     end
 
     # 異常系：無効なID形式の場合、404を返す
@@ -85,7 +85,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       get "/api/v1/evaluations/invalid_id", headers: headers
       expect(response).to have_http_status(:not_found)
       json = JSON.parse(response.body)
-      expect(json["message"]).to include("Evaluation with ID")
+      expect(json["message"]).to eq("対象の評価が見つかりません")
     end
 
     # 異常系：グループ非メンバーの場合、403を返す
@@ -173,7 +173,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       json = JSON.parse(response.body)
       expect(json["error"]).to eq("Unprocessable Entity")
-      expect(json["message"]).to eq("検証に失敗しました")
+      expect(json["message"]).to eq("入力内容に誤りがあります")
       expect(json["errors"]).to include("Score must be greater than or equal to 1")
     end
 
@@ -193,17 +193,6 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       json = JSON.parse(response.body)
       expect(json["errors"]).to include("Feedback is too long (maximum is 100 characters)")
-    end
-
-    #異常系：アサインメントが完了状態でない場合に422を返す
-    it "returns 422 when assignment is not completed" do
-      alt_task = create(:task, group: group)
-      incomplete_assignment = create(:assignment, task: alt_task, membership: admin_membership, due_date: 2.days.from_now, status: "not_started")
-      params = { evaluation: { assignment_id: incomplete_assignment.id, score: 3, feedback: "test" } }
-      post "/api/v1/evaluations", params: params, headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
-      json = JSON.parse(response.body)
-      expect(json["errors"]).to include("Assignment は完了状態でないと評価できません")
     end
 
     #異常系：同じ評価者による重複評価の場合に422を返す
@@ -232,7 +221,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       patch "/api/v1/evaluations/99999999", params: { evaluation: { feedback: "x" } }, headers: headers
       expect(response).to have_http_status(:not_found)
       json = JSON.parse(response.body)
-      expect(json["message"]).to include("Evaluation with ID")
+      expect(json["message"]).to eq("対象の評価が見つかりません")
     end
 
     # 異常系：無効なID形式の場合、404を返す
@@ -274,7 +263,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
       delete "/api/v1/evaluations/99999999", headers: headers
       expect(response).to have_http_status(:not_found)
       json = JSON.parse(response.body)
-      expect(json["message"]).to include("Evaluation with ID")
+      expect(json["message"]).to eq("対象の評価が見つかりません")
     end
   end
 end

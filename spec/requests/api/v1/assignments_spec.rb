@@ -302,7 +302,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response["error"]).to eq("Unprocessable Entity")
-      expect(json_response["message"]).to eq("検証に失敗しました")
+      expect(json_response["message"]).to eq("入力内容に誤りがあります")
       expect(json_response["errors"]).to be_an(Array)
       expect(json_response["errors"].any? { |e| e.include?("期限日以降") }).to be(true)
     end
@@ -340,8 +340,8 @@ RSpec.describe "Api::V1::Assignments", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response["error"]).to eq("Unprocessable Entity")
-      expect(json_response["message"]).to eq("検証に失敗しました")
-      expect(json_response["errors"]).to include("同じtask_idのタスクを同じユーザーに重複して割り当てることはできません")
+      expect(json_response["message"]).to eq("入力内容に誤りがあります")
+      expect(json_response["errors"]).to include("同じタスクを同じユーザーに重複して割り当てることはできません")
     end
   end
 end
