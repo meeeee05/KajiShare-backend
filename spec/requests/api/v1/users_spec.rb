@@ -29,13 +29,13 @@ RSpec.describe 'Users API', type: :request do
     # 異常系：認証ヘッダーなしでアクセス
     context 'without auth' do
       let(:headers) { {} }
-      include_examples 'status and message', 401, 'No authentication token provided'
+      include_examples 'status and message', 401, '認証トークンが提供されていません'
     end
 
     # 異常系：無効なトークンでアクセス
     context 'with invalid token' do
       let(:headers) { invalid_headers }
-      include_examples 'status and message', 401, 'Invalid or expired authentication token'
+      include_examples 'status and message', 401, '初めからやり直してください'
     end
 
     # 正常系：有効なトークンでアクセス
@@ -87,14 +87,14 @@ RSpec.describe 'Users API', type: :request do
       include_examples 'status and message', 422, nil
       it 'returns error message' do
         subject
-        expect(json_response['errors']).to include('Email already exists')
+        expect(json_response['errors']).to include('メールアドレスは既に登録されています')
       end
     end
 
     # 異常系：必須パラメータ欠如
     context 'with missing params' do
       let(:params) { {} }
-      include_examples 'status and message', 400, 'Required parameter missing: user'
+      include_examples 'status and message', 400, '必要なパラメータが不足しています: user'
     end
 
     # 異常系：重複したgoogle_subでユーザー作成
@@ -104,7 +104,7 @@ RSpec.describe 'Users API', type: :request do
       include_examples 'status and message', 422, nil
       it 'returns error message' do
         subject
-        expect(json_response['errors']).to include('Google account already registered')
+        expect(json_response['errors']).to include('Googleアカウントは既に登録されています')
       end
     end
   end
@@ -123,7 +123,7 @@ RSpec.describe 'Users API', type: :request do
       let(:other_user) { create(:user, email: 'other@example.com', google_sub: 'other123') }
       let(:user_id) { other_user.id }
       let(:headers) { auth_headers }
-      include_examples 'status and message', 403, 'You can only access your own user information'
+      include_examples 'status and message', 403, '自分のユーザー情報のみ参照できます'
     end
 
     # 異常系：認証ヘッダーなしでアクセス
@@ -137,12 +137,12 @@ RSpec.describe 'Users API', type: :request do
     context 'with non-existent user id' do
       let(:user_id) { 99999999 }
       let(:headers) { auth_headers }
-      include_examples 'status and message', 404, 'User with ID'
+      include_examples 'status and message', 404, 'のユーザーが見つかりません'
 
       # 異常系：ID形式が不正
       context 'with invalid id format' do
         let(:user_id) { 'invalid_id' }
-        include_examples 'status and message', 404, 'User with ID'
+        include_examples 'status and message', 404, 'のユーザーが見つかりません'
       end
     end
   end
@@ -193,7 +193,7 @@ RSpec.describe 'Users API', type: :request do
       let(:user_id) { 99999999 }
       let(:params) { update_params }
       let(:headers) { auth_headers }
-      include_examples 'status and message', 404, 'User with ID'
+      include_examples 'status and message', 404, 'のユーザーが見つかりません'
     end
 
     # 異常系：他のユーザーの情報を更新
@@ -202,7 +202,7 @@ RSpec.describe 'Users API', type: :request do
       let(:user_id) { other_user.id }
       let(:params) { update_params }
       let(:headers) { auth_headers }
-      include_examples 'status and message', 403, 'You can only update your own user information'
+      include_examples 'status and message', 403, '自分のユーザー情報のみ更新できます'
     end
   end
 end

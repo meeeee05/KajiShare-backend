@@ -128,7 +128,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
       let(:params) { { assignment: { due_date: nil } } }
       it do
         subject
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(json_response["errors"]).to be_present
       end
     end
@@ -300,7 +300,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
            params: { assignment: { due_date: Date.tomorrow, completed_date: Date.current, comment: "bad" } },
            headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json_response["error"]).to eq("Unprocessable Entity")
       expect(json_response["message"]).to eq("入力内容に誤りがあります")
       expect(json_response["errors"]).to be_an(Array)
@@ -338,7 +338,7 @@ RSpec.describe "Api::V1::Assignments", type: :request do
            params: { assignment: { due_date: Date.tomorrow, comment: "dup" } },
            headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json_response["error"]).to eq("Unprocessable Entity")
       expect(json_response["message"]).to eq("入力内容に誤りがあります")
       expect(json_response["errors"]).to include("同じタスクを同じユーザーに重複して割り当てることはできません")

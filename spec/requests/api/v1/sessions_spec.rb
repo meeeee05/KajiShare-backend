@@ -15,11 +15,12 @@ RSpec.describe "Api::V1::Sessions", type: :request do
     let(:json) { JSON.parse(response.body) }
 
     # 共有処理：401エラー出力
-    shared_examples 'unauthorized' do |msg|
+    shared_examples 'unauthorized' do |message|
       it do
         subject
         expect(response).to have_http_status(:unauthorized)
-        expect(json["error"]).to eq(msg)
+        expect(json["error"]).to eq("認証エラー")
+        expect(json["message"]).to eq(message)
       end
     end
 
@@ -45,7 +46,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
           subject
           expect(response).to have_http_status(:ok)
           expect(json["success"]).to be true
-          expect(json["message"]).to eq("Login successful")
+          expect(json["message"]).to eq("ログインに成功しました")
           user = User.find_by(google_sub: "12345")
           expect(user).to be_present
           expect(user.email).to eq("test@example.com")
@@ -96,7 +97,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
           expect(user).to be_present
           expect(user.picture).to be_nil
           expect(json["success"]).to be true
-          expect(json["message"]).to eq("Login successful")
+          expect(json["message"]).to eq("ログインに成功しました")
         end
       end
 
@@ -158,32 +159,30 @@ RSpec.describe "Api::V1::Sessions", type: :request do
           .with(invalid_token, aud: ENV["GOOGLE_CLIENT_ID"])
           .and_raise(Google::Auth::IDTokens::VerificationError.new("Invalid token"))
       end
-      include_examples 'unauthorized', "Invalid ID token"
-      # エラーメッセージのみを返し、メッセージは含まれないことを確認
-      it "returns only error without message for invalid token" do
+      include_examples 'unauthorized', "IDトークンが無効です"
+      it "returns an error and message for invalid token" do
         subject
-        expect(json.keys).to eq(["error"])
-        expect(json["message"]).to be_nil
+        expect(json.keys).to contain_exactly("error", "message")
       end
     end
 
     # 異常系：Authorizationヘッダーが存在しない
     context "without Authorization header" do
       let(:headers) { nil }
-      include_examples 'unauthorized', "Unauthorized"
+      include_examples 'unauthorized', "認証情報が不足しています"
     end
 
     # 異常系：Authorizationヘッダーの形式が不正
     context "with malformed Authorization header" do
       context "not Bearer token" do
         let(:headers) { { "Authorization" => "Basic #{valid_token}" } }
-        include_examples 'unauthorized', "Unauthorized"
+        include_examples 'unauthorized', "認証情報が不足しています"
       end
 
       # 異常系：Authorizationヘッダーのトークンが提供されていない
       context "no token provided" do
         let(:headers) { { "Authorization" => "Bearer " } }
-        include_examples 'unauthorized', "Invalid ID token"
+        include_examples 'unauthorized', "IDトークンが無効です"
       end
     end
 
@@ -194,7 +193,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
         allow(Google::Auth::IDTokens).to receive(:verify_oidc)
           .and_raise(StandardError.new("Service unavailable"))
       end
-      include_examples 'unauthorized', "Invalid ID token"
+      include_examples 'unauthorized', "IDトークンが無効です"
     end
 
     # 異常系：Google IDトークンにsubフィールドが存在しない
@@ -205,7 +204,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
           .with(valid_token, aud: ENV["GOOGLE_CLIENT_ID"])
           .and_return(mock_payload.merge("sub" => nil))
       end
-      include_examples 'unauthorized', "Invalid ID token"
+      include_examples 'unauthorized', "IDトークンが無効です"
     end
   end
 end

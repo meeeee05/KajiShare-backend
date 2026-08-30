@@ -13,7 +13,6 @@ class Api::V1::GroupsController < ApplicationController
     groups = Group.includes(:creator, :memberships, :tasks).where(id: user_group_ids)
     render json: groups,
            each_serializer: GroupSerializer,
-           adapter: :attributes,
            include: [:creator]
   end
 
@@ -129,7 +128,6 @@ class Api::V1::GroupsController < ApplicationController
     render json: group,
            serializer: GroupSerializer,
            status: status,
-           adapter: :attributes,
            include: [:creator]
   end
 

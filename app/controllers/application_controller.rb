@@ -7,17 +7,6 @@ class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found  #404 レコード未発見
   rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing  #400 パラメータ不足
   
-  # DB接続状況をJSON形式で確認
-  def database_status
-    begin
-      # 実際にクエリを実行して接続確認
-      User.connection.execute("SELECT 1")
-      "connected"
-    rescue
-      "disconnected"    
-    end
-  end
-
   # ユーザー認証
   def authenticate_user!
     auth_header = request.headers["Authorization"]
@@ -169,13 +158,6 @@ class ApplicationController < ActionController::API
       nil
     end
 
-    def localized_message(message, fallback)
-      return fallback if message.blank?
-      return message unless message.is_a?(String)
-
-      message.ascii_only? ? fallback : message
-    end
-
     # 400: Bad Request
     def handle_parameter_missing(exception)
       render json: {
@@ -228,7 +210,7 @@ class ApplicationController < ActionController::API
         message: "入力内容に誤りがあります",
         errors: errors,
         status: 422
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
 
     # 500: Internal Server Error

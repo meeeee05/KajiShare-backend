@@ -142,7 +142,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
              headers: headers
       }.not_to change(Evaluation, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["errors"]).to include("Score can't be blank")
     end
@@ -150,7 +150,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     # 異常系：パラメータ不正時に422を返す
     it "returns 422 if params invalid" do
       post "/api/v1/evaluations", params: { evaluation: { assignment_id: nil, score: nil } }, headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["errors"]).to be_present
     end
@@ -170,7 +170,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     it "returns 422 when score is below minimum" do
       params = { evaluation: { assignment_id: another_assignment.id, score: 0 } }
       post "/api/v1/evaluations", params: params, headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["error"]).to eq("Unprocessable Entity")
       expect(json["message"]).to eq("入力内容に誤りがあります")
@@ -181,7 +181,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     it "returns 422 when score is not integer" do
       params = { evaluation: { assignment_id: another_assignment.id, score: 3.5 } }
       post "/api/v1/evaluations", params: params, headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["errors"]).to include("Score must be an integer")
     end
@@ -190,7 +190,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     it "returns 422 when feedback exceeds length" do
       params = { evaluation: { assignment_id: another_assignment.id, score: 3, feedback: "a" * 101 } }
       post "/api/v1/evaluations", params: params, headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["errors"]).to include("Feedback is too long (maximum is 100 characters)")
     end
@@ -199,7 +199,7 @@ RSpec.describe "Api::V1::Evaluations", type: :request do
     it "returns 422 for duplicate evaluation by same evaluator" do
       params = { evaluation: { assignment_id: assignment.id, score: 4, feedback: "dup" } }
       post "/api/v1/evaluations", params: params, headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["errors"]).to include("Assignment は既に評価済みです")
     end

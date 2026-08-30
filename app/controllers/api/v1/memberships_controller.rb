@@ -212,7 +212,7 @@ module Api
           message: message,
           errors: [message],
           status: 422
-        }, status: :unprocessable_entity
+        }, status: :unprocessable_content
       end
 
       def extract_share_key

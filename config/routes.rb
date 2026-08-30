@@ -49,6 +49,4 @@ Rails.application.routes.draw do
   end
 
   post "auth/google", to: "sessions#google_auth"
-
-  get "api/test", to: "application#test"
 end

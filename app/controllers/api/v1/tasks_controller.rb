@@ -130,14 +130,6 @@ module Api
         validate_group_membership_for_action
       end
 
-      #Admin権限チェック：指定されたグループのAdmin権限を持つユーザーのみ操作可能
-      def check_admin_permission
-        membership = validate_group_membership_for_action
-        return unless membership
-
-        return handle_forbidden("この操作には管理者権限が必要です") unless membership.admin?
-      end
-
       # アクションに応じた権限の検証
       def validate_group_membership_for_action
         group_id = get_group_id_for_action

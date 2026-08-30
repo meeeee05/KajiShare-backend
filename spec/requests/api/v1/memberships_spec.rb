@@ -19,7 +19,7 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       subject
       expect(response).to have_http_status(:not_found)
       json = JSON.parse(response.body)
-      expect(json["message"]).to include("Membership with ID")
+      expect(json["message"]).to include("のメンバーシップが見つかりません")
     end
   end
 
@@ -109,7 +109,7 @@ RSpec.describe "Api::V1::Memberships", type: :request do
 
       post "/api/v1/memberships", params: { membership: { share_key: group.share_key } }, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["message"]).to eq("既に参加済みです。")
     end
@@ -120,7 +120,7 @@ RSpec.describe "Api::V1::Memberships", type: :request do
 
       post "/api/v1/memberships", params: { membership: { share_key: "INVALID" } }, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
       expect(json["message"]).to eq("招待コードが間違っています。再度ご確認ください。")
     end

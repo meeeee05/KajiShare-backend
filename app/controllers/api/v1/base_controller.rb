@@ -13,7 +13,7 @@ class Api::V1::BaseController < ApplicationController
 
   # 422エラー
   def record_invalid(error)
-    render json: { errors: error.record.errors.full_messages }, status: :unprocessable_entity
+    render json: { errors: error.record.errors.full_messages }, status: :unprocessable_content
   end
 
   # 成功時共通処理

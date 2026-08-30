@@ -35,7 +35,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
         u.account_type = 'user'  # デフォルトでuserタイプに設定
       end
 
-      render_success({ user: user })
+      render_success({ user: user }, "ログインに成功しました")
     rescue StandardError => e
       Rails.logger.error "Google Auth Error: #{e.message}"
       render json: { error: "認証エラー", message: "IDトークンが無効です" }, status: :unauthorized
