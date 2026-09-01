@@ -90,6 +90,17 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       expect(json["data"]["attributes"]["user_id"]).to eq(new_user.id)
     end
 
+    it "creates a regular active member even if role and active are supplied" do
+      params = valid_params.deep_merge(membership: { role: "admin", active: false })
+
+      post "/api/v1/memberships", params: params, headers: headers
+
+      expect(response).to have_http_status(:created)
+      membership = Membership.find_by!(user: new_user, group: group)
+      expect(membership).to be_member
+      expect(membership).to be_active
+    end
+
     # 異常系：パラメータ不正
     it "returns error if params invalid" do
       post "/api/v1/memberships", params: { membership: { user_id: nil, group_id: group.id } }, headers: headers
@@ -132,6 +143,28 @@ RSpec.describe "Api::V1::Memberships", type: :request do
       put "/api/v1/memberships/#{member_membership.id}", params: { membership: { active: false } }, headers: headers
       expect(response).to have_http_status(:ok)
       expect(member_membership.reload.active).to be false
+    end
+
+    it "does not update user, group, or role through the general update endpoint" do
+      other_user = create(:user)
+      other_group = create(:group)
+
+      put "/api/v1/memberships/#{member_membership.id}", params: {
+        membership: {
+          user_id: other_user.id,
+          group_id: other_group.id,
+          role: "admin",
+          active: false
+        }
+      }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(member_membership.reload).to have_attributes(
+        user_id: user.id,
+        group_id: group.id,
+        role: "member",
+        active: false
+      )
     end
 
     # 異常系：存在しないmembershipの更新で404を返す

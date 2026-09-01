@@ -118,7 +118,7 @@ class ApplicationController < ActionController::API
     end
 
     def allowed_origins
-      default_origins = [
+      local_origins = [
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:5173",
@@ -126,7 +126,9 @@ class ApplicationController < ActionController::API
       ]
       configured_origins = ENV.fetch("CORS_ORIGINS", ENV.fetch("FRONTEND_URL", "")).split(",").map(&:strip).reject(&:blank?)
 
-      default_origins + configured_origins
+      return configured_origins if Rails.env.production?
+
+      local_origins + configured_origins
     end
 
     def guest_token_verifier

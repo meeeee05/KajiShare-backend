@@ -40,9 +40,12 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Keep the initial Render deployment on one PostgreSQL database.
+  # Keep cache data in-process for the initial single-server deployment.
   config.cache_store = :memory_store
-  config.active_job.queue_adapter = :async
+
+  # Persist jobs in the same PostgreSQL database as the application. This keeps
+  # recurring jobs durable without adding Redis or a second RDS database.
+  config.active_job.queue_adapter = :solid_queue
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
@@ -54,12 +57,10 @@ Rails.application.configure do
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
-  # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
-  #
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # Accept public requests only for the configured API hostname. The internal
+  # health check is excluded because it uses the Docker service hostname.
+  if ENV["API_DOMAIN"].present?
+    config.hosts << ENV["API_DOMAIN"]
+    config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  end
 end

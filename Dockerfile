@@ -3,7 +3,7 @@
 
 # This Dockerfile is designed for production, not development:
 # docker build -t kaji_share_backend .
-# docker run -d -p 10000:10000 -e RAILS_MASTER_KEY=<value from config/master.key> --name kaji_share_backend kaji_share_backend
+# docker run -d -p 3000:3000 --env-file .env.production --name kaji_share_backend kaji_share_backend
 
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
@@ -61,9 +61,10 @@ RUN groupadd --system --gid 1000 rails && \
     chown -R rails:rails db log tmp
 USER 1000:1000
 
-# Entrypoint prepares the database.
+# Keep the entrypoint focused on process initialization. Database preparation is
+# run explicitly by the deployment script before the web container is replaced.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server via Thruster by default, this can be overwritten at runtime
-EXPOSE 10000
-CMD ["./bin/thrust", "./bin/rails", "server", "-b", "0.0.0.0"]
+# Caddy terminates TLS and proxies requests to Puma on the private Docker network.
+EXPOSE 3000
+CMD ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]

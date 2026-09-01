@@ -1,4 +1,4 @@
-class GenerateRecurringTasksJob < ActiveJob::Base
+class GenerateRecurringTasksJob < ApplicationJob
   queue_as :default
   BIWEEKLY_INTERVAL_DAYS = 14
 

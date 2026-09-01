@@ -1,0 +1,43 @@
+name: kajishare
+
+services:
+  web:
+    image: "${IMAGE_URI:?IMAGE_URI must be set in .env.production}"
+    env_file:
+      - "${KAJISHARE_ENV_FILE:-.env.production}"
+    command: ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+    expose:
+      - "3000"
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:3000/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      API_DOMAIN: "${API_DOMAIN:?API_DOMAIN must be set in .env.production}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy_data:
+  caddy_config:

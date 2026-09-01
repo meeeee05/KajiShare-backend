@@ -2,15 +2,17 @@
 # corsの設定
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    default_origins = [
+    local_origins = [
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:5173",
       "http://localhost:8080"
     ]
     configured_origins = ENV.fetch("CORS_ORIGINS", ENV.fetch("FRONTEND_URL", "")).split(",").map(&:strip).reject(&:blank?)
+    allowed_origins = configured_origins
+    allowed_origins += local_origins unless Rails.env.production?
 
-    origins(*default_origins, *configured_origins)
+    origins(*allowed_origins)
 
     resource "*",
       headers: :any,

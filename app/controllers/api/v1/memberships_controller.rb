@@ -33,7 +33,7 @@ module Api
             return join_group_by_share_key
           end
 
-          membership = Membership.new(membership_params)
+          membership = Membership.new(membership_create_attributes)
           if membership.save
             Rails.logger.info "Membership created: User #{membership.user.name} joined Group #{membership.group.name} as #{membership.role} by admin #{current_user.name}"
             render_membership_success(membership, :created)
@@ -48,7 +48,7 @@ module Api
       # PUT /api/v1/memberships/:id - Admin権限でメンバーシップ更新（roleは専用エンドポイントで変更）
       def update
         begin
-          if @membership.update(membership_params)
+          if @membership.update(membership_update_params)
             Rails.logger.info "Membership updated: User #{@membership.user.name} in Group #{@membership.group.name} by admin #{current_user.name}"
             render_membership_success(@membership)
           else
@@ -114,10 +114,21 @@ module Api
         handle_not_found("ID: #{params[:id]} のメンバーシップが見つかりません")
       end
 
-      # 通常の更新用パラメータ（roleは専用エンドポイントで変更）
-      def membership_params
-        # roleの変更は専用のchange_roleエンドポイントでのみ可能
-        params.require(:membership).permit(:user_id, :group_id, :workload_ratio, :active, :role)
+      # 管理者による追加では一般メンバーとして有効化し、権限変更は専用APIに限定する
+      def membership_create_attributes
+        membership = params.require(:membership)
+
+        membership.permit(:workload_ratio).to_h.merge(
+          user_id: membership[:user_id],
+          group_id: membership[:group_id],
+          role: "member",
+          active: true
+        )
+      end
+
+      # 所属先・対象ユーザー・権限は更新APIから変更させない
+      def membership_update_params
+        params.require(:membership).permit(:workload_ratio, :active)
       end
 
       # Member権限チェック：指定されたグループのmember以上のみ操作可能

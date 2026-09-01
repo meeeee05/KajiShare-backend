@@ -9,22 +9,20 @@ gem "puma", ">= 5.0"
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
+# Use PostgreSQL-backed Active Job without adding Redis or another service.
+gem "solid_queue"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
-
-# Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
-gem "thruster", require: false
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem 'rack-cors', require: 'rack/cors'
 gem "google-id-token"
 gem "googleauth"
-gem 'dotenv-rails'
 gem 'active_model_serializers', '~> 0.10.0'
 
 group :development, :test do
-  # Use the database-backed adapter for Active Job in local/test.
-  gem "solid_queue"
+  gem 'dotenv-rails'
 
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"

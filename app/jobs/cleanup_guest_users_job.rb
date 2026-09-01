@@ -1,4 +1,4 @@
-class CleanupGuestUsersJob < ActiveJob::Base
+class CleanupGuestUsersJob < ApplicationJob
   queue_as :default
 
   GUEST_ACCOUNT_TYPE = "guest"

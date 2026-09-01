@@ -25,7 +25,7 @@
 
 - Ruby 3.4.4
 - Rails 8.0.4（API mode）
-- PostgreSQL 14.19
+- PostgreSQL 15
 - RSpec 3.13
 - FactoryBot, Shoulda Matchers
 - Docker / docker-compose
@@ -117,6 +117,11 @@ bundle exec rspec
 
 本APIは Rails API モードで構築しており、
 JavaScript 依存関係はフロントエンド側で管理しています。
+
+## AWSデプロイ
+
+EC2・Docker・RDS・Caddyを使った本番デプロイ手順は、
+[`docs/aws-ec2-deploy.md`](docs/aws-ec2-deploy.md)を参照してください。
 
 ## ディレクトリ構成（抜粋）
 

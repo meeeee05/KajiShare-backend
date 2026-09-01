@@ -27,6 +27,14 @@
 # Ignore CI service files.
 /.github
 
+# Ignore files that are used only to build, test, or operate the image.
+/spec
+/docs
+/README.md
+/Caddyfile
+/compose*.yml
+/docker-compose*.yml
+
 # Ignore development files
 /.devcontainer
 
