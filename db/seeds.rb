@@ -9,7 +9,7 @@ Membership.destroy_all
 Group.destroy_all
 User.destroy_all
 
-#Users（既存データに依存しない）
+# Users（既存データに依存しない）
 user1 = User.find_or_create_by!(google_sub: "1234567890abcde") do |u|
   u.name = "Taro Yamada"
   u.email = "taroo@example.com"
@@ -24,7 +24,7 @@ user2 = User.find_or_create_by!(google_sub: "abcdef1234567890") do |u|
   u.account_type = "user"
 end
 
-#Group
+# Group
 group = Group.find_or_create_by!(name: "家事シェア") do |g|
   g.share_key = "abcd1234"
   g.assign_mode = "manual"
@@ -32,7 +32,7 @@ group = Group.find_or_create_by!(name: "家事シェア") do |g|
   g.active = true
 end
 
-#Membership
+# Membership
 member1 = Membership.find_or_create_by!(
   user: user1,
   group: group
@@ -49,29 +49,29 @@ member2 = Membership.find_or_create_by!(
   m.active = true
 end
 
-#Tasks
+# Tasks
 task1 = Task.create!(
   group: group,
   name: "掃除",
   description: "リビングの掃除をする",
-  point: 10
+  point: 3
 )
 
 task2 = Task.create!(
   group: group,
   name: "洗濯",
   description: "服を洗濯して干す",
-  point: 8
+  point: 2
 )
 
 task3 = Task.create!(
   group: group,
   name: "料理",
   description: "夕食を作る",
-  point: 15
+  point: 5
 )
 
-#Assignment
+# Assignment
 assignment1 = Assignment.create!(
   task: task1,
   membership: member1,
@@ -82,11 +82,11 @@ assignment1 = Assignment.create!(
 assignment2 = Assignment.create!(
   task: task2,
   membership: member2,
-  status: "completed", 
+  status: "completed",
   completed_date: 2.days.ago
 )
 
-#Evaluation
+# Evaluation
 Evaluation.create!(
   assignment: assignment1,
   evaluator: member2.user,

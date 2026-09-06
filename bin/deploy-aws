@@ -17,6 +17,6 @@ compose=(docker compose --env-file "${env_file}" -f "${compose_file}")
 
 "${compose[@]}" config --quiet
 "${compose[@]}" pull
-"${compose[@]}" run --rm --no-deps web ./bin/rails db:prepare
+"${compose[@]}" run --rm --no-deps web ./bin/rails db:migrate
 "${compose[@]}" up -d --remove-orphans
 "${compose[@]}" ps
